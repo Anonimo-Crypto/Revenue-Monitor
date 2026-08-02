@@ -1,0 +1,294 @@
+/* Calculadora de Ganancias - Copyright © 2026 */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  background: #111;
+  color: #eee;
+  min-height: 100vh;
+  padding: 16px;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+h1 {
+  color: #0f0;
+  text-align: center;
+  margin-bottom: 8px;
+  font-size: 1.5rem;
+}
+
+.subtitle {
+  text-align: center;
+  color: #888;
+  font-size: 0.85rem;
+  margin-bottom: 20px;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.tab {
+  flex: 1;
+  min-width: 70px;
+  padding: 10px 6px;
+  background: #222;
+  border: none;
+  border-radius: 6px;
+  color: #aaa;
+  font-size: 0.8rem;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.tab.active {
+  background: #0f0;
+  color: #111;
+}
+
+/* Cards */
+.card {
+  background: #1a1a1a;
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 16px;
+  border: 1px solid #333;
+}
+
+.card h2 {
+  color: #0f0;
+  font-size: 1.1rem;
+  margin-bottom: 12px;
+}
+
+label {
+  display: block;
+  margin-top: 10px;
+  font-size: 0.9rem;
+  color: #ccc;
+}
+
+input, select {
+  width: 100%;
+  padding: 10px;
+  margin-top: 4px;
+  border: none;
+  border-radius: 6px;
+  background: #2a2a2a;
+  color: #eee;
+  font-size: 1rem;
+}
+
+input:focus, select:focus {
+  outline: 2px solid #0f0;
+}
+
+button.btn {
+  margin-top: 14px;
+  padding: 12px;
+  width: 100%;
+  background: #0f0;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 1rem;
+  color: #111;
+}
+
+button.btn:hover {
+  background: #0c0;
+}
+
+button.btn-secondary {
+  background: #333;
+  color: #eee;
+}
+
+button.btn-secondary:hover {
+  background: #444;
+}
+
+button.btn-danger {
+  background: #a33;
+  color: #fff;
+}
+
+button.btn-danger:hover {
+  background: #c44;
+}
+
+/* Resumen */
+.resumen {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.resumen-item {
+  background: #1a1a1a;
+  border-radius: 8px;
+  padding: 12px;
+  text-align: center;
+  border: 1px solid #333;
+}
+
+.resumen-item .label {
+  font-size: 0.75rem;
+  color: #888;
+  margin-bottom: 4px;
+}
+
+.resumen-item .value {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #0f0;
+}
+
+.resumen-item .value.negativo {
+  color: #f55;
+}
+
+/* Listas */
+.lista {
+  list-style: none;
+}
+
+.lista li {
+  background: #222;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 8px;
+  border-left: 4px solid #0f0;
+}
+
+.lista li.venta {
+  border-left-color: #0af;
+}
+
+.lista li.agotado {
+  border-left-color: #666;
+  opacity: 0.7;
+}
+
+.item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.item-nombre {
+  font-weight: bold;
+  color: #fff;
+}
+
+.item-fecha {
+  font-size: 0.75rem;
+  color: #888;
+}
+
+.item-detalle {
+  font-size: 0.85rem;
+  color: #bbb;
+  line-height: 1.4;
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.7rem;
+  font-weight: bold;
+}
+
+.badge.stock {
+  background: #0f03;
+  color: #0f0;
+}
+
+.badge.agotado {
+  background: #333;
+  color: #888;
+}
+
+/* Mensajes */
+.mensaje {
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.mensaje.error {
+  background: #3a1515;
+  color: #f55;
+  border: 1px solid #a33;
+}
+
+.mensaje.exito {
+  background: #153a15;
+  color: #0f0;
+  border: 1px solid #0a0;
+}
+
+.oculto {
+  display: none !important;
+}
+
+.section {
+  display: none;
+}
+
+.section.active {
+  display: block;
+}
+
+.empty {
+  text-align: center;
+  color: #666;
+  padding: 30px 10px;
+  font-size: 0.9rem;
+}
+
+/* Small buttons */
+.btn-small {
+  padding: 6px 10px;
+  font-size: 0.8rem;
+  width: auto;
+  margin-top: 6px;
+  margin-right: 6px;
+}
+
+footer {
+  text-align: center;
+  color: #555;
+  font-size: 0.75rem;
+  margin-top: 30px;
+  padding-bottom: 20px;
+}
+
+/* Gráfico */
+.chart-container {
+  position: relative;
+  width: 100%;
+  max-height: 320px;
+  margin-top: 10px;
+}
+
+#chartGanancias {
+  width: 100% !important;
+  max-height: 300px;
+}
