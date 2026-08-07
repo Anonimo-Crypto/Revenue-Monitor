@@ -436,6 +436,128 @@ function exportarCSV() {
 }
 
 // ======================
+// Importar desde CSV
+// ======================
+function importarCSV(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  if (!confirm("¿Importar este archivo CSV?\n\nSe REEMPLAZARÁN todos los datos actuales por los del archivo.\nAsegúrate de haber exportado antes si quieres conservar una copia.")) {
+    event.target.value = "";
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      let text = e.target.result;
+      // Quitar BOM si existe
+      if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+
+      const lineas = text.split(/\r?\n/).filter(l => l.trim() !== "");
+      if (lineas.length < 2) throw new Error("Archivo vacío o inválido");
+
+      const nuevosLotes = [];
+      const nuevasVentas = [];
+
+      // Saltar la cabecera (primera línea)
+      for (let i = 1; i < lineas.length; i++) {
+        const linea = lineas[i].trim();
+        if (!linea || linea.startsWith("===") || linea.startsWith("Total ") || linea.startsWith("Exportado") || linea.startsWith("Calculadora") || linea.startsWith("Ganancia Neta") || linea.startsWith("Stock Actual")) {
+          continue;
+        }
+
+        // Parsear CSV simple (respetando comillas)
+        const cols = parseCSVLine(linea);
+        if (cols.length < 3) continue;
+
+        const tipo = (cols[0] || "").toUpperCase().trim();
+
+        if (tipo === "COMPRA") {
+          const cantidad = parseInt(cols[3]) || 0;
+          const costoUnitario = parseFloat(cols[4]) || 0;
+          const costoTotal = parseFloat(cols[5]) || 0;
+          const stockRestante = parseInt(cols[9]) || cantidad;
+          const id = cols[10] || uid();
+
+          nuevosLotes.push({
+            id: id,
+            nombre: cols[2] || "Sin nombre",
+            cantidadInicial: cantidad,
+            cantidadRestante: stockRestante,
+            costoTotal: costoTotal,
+            costoUnitario: costoUnitario,
+            fecha: cols[1] || new Date().toISOString()
+          });
+        } else if (tipo === "VENTA") {
+          const cantidad = parseInt(cols[3]) || 0;
+          const costoUnitario = parseFloat(cols[4]) || 0;
+          const costoTotal = parseFloat(cols[5]) || 0;
+          const precioUnitario = parseFloat(cols[6]) || 0;
+          const ingreso = parseFloat(cols[7]) || (precioUnitario * cantidad);
+          const ganancia = parseFloat(cols[8]) || (ingreso - costoTotal);
+          const id = cols[10] || uid();
+
+          nuevasVentas.push({
+            id: id,
+            nombre: cols[2] || "Sin nombre",
+            cantidad: cantidad,
+            precioUnitario: precioUnitario,
+            ingreso: ingreso,
+            costo: costoTotal,
+            ganancia: ganancia,
+            fecha: cols[1] || new Date().toISOString(),
+            detalles: [] // no tenemos detalles en el CSV, se usará fallback al eliminar
+          });
+        }
+      }
+
+      // Reemplazar datos
+      datos.lotes = nuevosLotes;
+      datos.ventas = nuevasVentas;
+      guardar();
+      actualizarTodo();
+
+      alert(`Importación exitosa.\n\nLotes restaurados: ${nuevosLotes.length}\nVentas restauradas: ${nuevasVentas.length}`);
+    } catch (err) {
+      console.error(err);
+      alert("Error al importar el CSV.\nAsegúrate de que sea un archivo exportado desde esta misma aplicación.");
+    }
+
+    // Limpiar el input para poder volver a seleccionar el mismo archivo
+    event.target.value = "";
+  };
+
+  reader.readAsText(file, "UTF-8");
+}
+
+// Parser simple de una línea CSV (soporta comillas)
+function parseCSVLine(line) {
+  const result = [];
+  let current = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    if (char === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        current += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (char === "," && !inQuotes) {
+      result.push(current);
+      current = "";
+    } else {
+      current += char;
+    }
+  }
+  result.push(current);
+  return result;
+}
+
+// ======================
 // Helpers UI
 // ======================
 function mostrarMensaje(id, texto, tipo) {

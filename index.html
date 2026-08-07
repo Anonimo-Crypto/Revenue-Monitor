@@ -107,6 +107,11 @@
         📥 Exportar datos a CSV
       </button>
 
+      <button class="btn btn-secondary" onclick="document.getElementById('input-importar').click()" style="margin-top:10px">
+        📤 Importar datos desde CSV
+      </button>
+      <input type="file" id="input-importar" accept=".csv,text/csv" style="display:none" onchange="importarCSV(event)">
+
       <button class="btn btn-danger" onclick="borrarTodo()" style="margin-top:10px">
         Borrar todos los datos
       </button>
