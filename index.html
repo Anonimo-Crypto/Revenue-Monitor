@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#111111">
+  <meta name="description" content="Calculadora de ganancias con lotes, inventario y seguimiento de ventas">
+  <title>Calculadora de Ganancias</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="192.png">
+  <link rel="apple-touch-icon" href="192.png">
+
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+  <h1>Calculadora de Ganancias</h1>
+  <p class="subtitle">Lotes • Inventario • Ventas • Historial • Gráfico</p>
+
+  <!-- Resumen -->
+  <div class="resumen">
+    <div class="resumen-item">
+      <div class="label">Invertido</div>
+      <div class="value" id="res-invertido">$0.00</div>
+    </div>
+    <div class="resumen-item">
+      <div class="label">Vendido</div>
+      <div class="value" id="res-vendido">$0.00</div>
+    </div>
+    <div class="resumen-item">
+      <div class="label">Ganancia</div>
+      <div class="value" id="res-ganancia">$0.00</div>
+    </div>
+    <div class="resumen-item">
+      <div class="label">Stock</div>
+      <div class="value" id="res-stock">0 uds</div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab active" data-tab="lote">+ Lote</button>
+    <button class="tab" data-tab="venta">Venta</button>
+    <button class="tab" data-tab="inventario">Inventario</button>
+    <button class="tab" data-tab="historial">Historial</button>
+    <button class="tab" data-tab="grafico">Gráfico</button>
+  </div>
+
+  <!-- SECCIÓN: Agregar Lote -->
+  <div id="sec-lote" class="section active">
+    <div class="card">
+      <h2>Agregar Lote (Compra)</h2>
+      <div id="lote-msg" class="mensaje oculto"></div>
+
+      <label>Nombre del producto</label>
+      <input type="text" id="lote-nombre" placeholder="Ej: Camiseta negra">
+
+      <label>Costo total del lote (pesos)</label>
+      <input type="number" id="lote-costo" min="0" step="0.01" placeholder="0.00">
+
+      <label>Cantidad de unidades</label>
+      <input type="number" id="lote-cantidad" min="1" step="1" placeholder="1">
+
+      <button class="btn" onclick="agregarLote()">Guardar Lote</button>
+    </div>
+  </div>
+
+  <!-- SECCIÓN: Registrar Venta -->
+  <div id="sec-venta" class="section">
+    <div class="card">
+      <h2>Registrar Venta</h2>
+      <div id="venta-msg" class="mensaje oculto"></div>
+
+      <label>Producto</label>
+      <select id="venta-producto">
+        <option value="">-- Selecciona producto --</option>
+      </select>
+
+      <label>Cantidad a vender</label>
+      <input type="number" id="venta-cantidad" min="1" step="1" placeholder="1">
+
+      <label>Precio de venta por unidad</label>
+      <input type="number" id="venta-precio" min="0" step="0.01" placeholder="0.00">
+
+      <button class="btn" onclick="registrarVenta()">Registrar Venta</button>
+    </div>
+  </div>
+
+  <!-- SECCIÓN: Inventario -->
+  <div id="sec-inventario" class="section">
+    <div class="card">
+      <h2>Inventario actual</h2>
+      <div id="lista-inventario"></div>
+    </div>
+  </div>
+
+  <!-- SECCIÓN: Historial -->
+  <div id="sec-historial" class="section">
+    <div class="card">
+      <h2>Historial de movimientos</h2>
+      <div id="lista-historial"></div>
+
+      <button class="btn btn-secondary" onclick="exportarCSV()" style="margin-top:16px">
+        📥 Exportar datos a CSV
+      </button>
+
+      <button class="btn btn-danger" onclick="borrarTodo()" style="margin-top:10px">
+        Borrar todos los datos
+      </button>
+    </div>
+  </div>
+
+  <!-- SECCIÓN: Gráfico -->
+  <div id="sec-grafico" class="section">
+    <div class="card">
+      <h2>Gráfico de Ganancias</h2>
+      <div id="grafico-vacio" class="empty oculto">
+        Aún no hay ventas registradas.<br>Registra ventas para ver el gráfico.
+      </div>
+      <div class="chart-container">
+        <canvas id="chartGanancias"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Datos guardados en tu dispositivo · PWA<br>
+    <span style="font-size:0.7rem; color:#444;">
+      Copyright © 2026 · Todos los derechos reservados
+    </span>
+  </footer>
+
+  <script src="main.js"></script>
+  <script>
+    // Registrar Service Worker
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("sw.js")
+        .then(() => console.log("SW registrado"))
+        .catch(err => console.log("Error SW:", err));
+    }
+  </script>
+</body>
+</html>
