@@ -12,6 +12,7 @@ Todo se guarda localmente en el navegador y funciona offline.
 - **Inventario** en tiempo real agrupado por producto
 - **Resumen** de: Invertido · Vendido · Ganancia · Stock actual
 - **Historial** completo de todos los movimientos
+- **Eliminar movimientos individuales** (borra una venta y devuelve el stock + corrige la ganancia)
 - **Exportar a CSV** bien estructurado (compatible con Excel y Google Sheets)
 - **Gráfico de ganancias** (barras por venta + línea de ganancia acumulada)
 - **PWA**: se puede instalar en el celular y funciona sin internet

@@ -140,15 +140,17 @@ function renderHistorial() {
   datos.lotes.forEach(l => {
     items.push({
       tipo: "compra",
+      id: l.id,
       fecha: l.fecha,
       nombre: l.nombre,
-      texto: `Compraste ${l.cantidadInicial} uds por ${dinero(l.costoTotal)} (unit: ${dinero(l.costoUnitario)})`
+      texto: `Compraste ${l.cantidadInicial} uds por ${dinero(l.costoTotal)} (unit: ${dinero(l.costoUnitario)}) · Quedan ${l.cantidadRestante}`
     });
   });
 
   datos.ventas.forEach(v => {
     items.push({
       tipo: "venta",
+      id: v.id,
       fecha: v.fecha,
       nombre: v.nombre,
       texto: `Vendiste ${v.cantidad} uds a ${dinero(v.precioUnitario)} → Ganancia: ${dinero(v.ganancia)}`
@@ -172,6 +174,9 @@ function renderHistorial() {
           <span class="item-fecha">${formatearFecha(item.fecha)}</span>
         </div>
         <div class="item-detalle">${item.texto}</div>
+        <button class="btn-eliminar" onclick="eliminarMovimiento('${item.id}', '${item.tipo}')" title="Eliminar este movimiento">
+          ✕ Eliminar
+        </button>
       </li>
     `;
   });
@@ -282,6 +287,67 @@ function borrarTodo() {
   guardar();
   actualizarTodo();
   alert("Datos borrados.");
+}
+
+// Eliminar un movimiento individual (venta o compra)
+function eliminarMovimiento(id, tipo) {
+  if (tipo === "venta") {
+    const venta = datos.ventas.find(v => v.id === id);
+    if (!venta) return alert("No se encontró la venta.");
+
+    if (!confirm(`¿Eliminar esta venta de "${venta.nombre}"?\n\nSe devolverán ${venta.cantidad} unidades al stock y se restará la ganancia.`)) {
+      return;
+    }
+
+    // Devolver unidades a los lotes originales (usando los detalles FIFO)
+    if (venta.detalles && venta.detalles.length > 0) {
+      venta.detalles.forEach(d => {
+        const lote = datos.lotes.find(l => l.id === d.loteId);
+        if (lote) {
+          lote.cantidadRestante += d.cantidad;
+        }
+      });
+    } else {
+      // Fallback por si no hay detalles (datos antiguos): devolver al primer lote del mismo producto
+      let pendiente = venta.cantidad;
+      const lotesProducto = datos.lotes
+        .filter(l => l.nombre === venta.nombre)
+        .sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+
+      for (const lote of lotesProducto) {
+        if (pendiente <= 0) break;
+        const espacio = lote.cantidadInicial - lote.cantidadRestante;
+        const devolver = Math.min(pendiente, espacio);
+        lote.cantidadRestante += devolver;
+        pendiente -= devolver;
+      }
+    }
+
+    // Quitar la venta
+    datos.ventas = datos.ventas.filter(v => v.id !== id);
+    guardar();
+    actualizarTodo();
+    alert("Venta eliminada. Stock y ganancias actualizados.");
+
+  } else if (tipo === "compra") {
+    const lote = datos.lotes.find(l => l.id === id);
+    if (!lote) return alert("No se encontró el lote.");
+
+    // Solo permitir borrar si no se ha vendido nada de ese lote
+    if (lote.cantidadRestante !== lote.cantidadInicial) {
+      alert(`No se puede eliminar este lote porque ya se vendieron unidades de él.\n\nQuedan ${lote.cantidadRestante} de ${lote.cantidadInicial}.\nPrimero elimina las ventas relacionadas.`);
+      return;
+    }
+
+    if (!confirm(`¿Eliminar este lote de compra de "${lote.nombre}"?\n\nSe restará del invertido.`)) {
+      return;
+    }
+
+    datos.lotes = datos.lotes.filter(l => l.id !== id);
+    guardar();
+    actualizarTodo();
+    alert("Lote eliminado.");
+  }
 }
 
 // ======================

@@ -272,6 +272,24 @@ button.btn-danger:hover {
   margin-right: 6px;
 }
 
+/* Botón eliminar en historial */
+.btn-eliminar {
+  margin-top: 8px;
+  padding: 5px 10px;
+  font-size: 0.75rem;
+  background: #3a1515;
+  color: #f55;
+  border: 1px solid #a33;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.btn-eliminar:hover {
+  background: #5a2020;
+  color: #fff;
+}
+
 footer {
   text-align: center;
   color: #555;
