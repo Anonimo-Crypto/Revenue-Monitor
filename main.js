@@ -1,143 +1,268 @@
 // ======================
 // Calculadora de Ganancias - PWA
-// Copyright © 2026 · Todos los derechos reservados
+// Copyright © 2026
+// Oscar Antonio Alvarez Collado
 // ======================
 
-const STORAGE_KEY = "calculadora_ganancias_v1";
+const STORAGE_KEY = "calculadora_ganancias_v2";
 
-// Estado
-let datos = {
-  lotes: [],      // compras
-  ventas: []      // ventas realizadas
+let store = {
+  sesiones: [],
+  sesionActivaId: null
 };
 
-let chartGanancias = null; // instancia de Chart.js
+let chartGanancias = null;
+let modalSesionModo = "crear"; // crear | editar
+let modalPrecioProducto = null;
 
-// Cargar datos
-function cargar() {
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if (raw) {
-    try {
-      datos = JSON.parse(raw);
-    } catch (e) {
-      console.error("Error cargando datos", e);
-    }
-  }
-}
-
-// Guardar
-function guardar() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(datos));
-}
-
-// Generar ID simple
+// ---------- Helpers ----------
 function uid() {
   return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
 }
 
-// Formatear fecha
+function dinero(n) {
+  return "$" + Number(n || 0).toFixed(2);
+}
+
 function formatearFecha(iso) {
   const d = new Date(iso);
   return d.toLocaleDateString("es-ES", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit"
+    day: "2-digit", month: "2-digit", year: "2-digit",
+    hour: "2-digit", minute: "2-digit"
   });
 }
 
-// Formatear dinero
-function dinero(n) {
-  return "$" + Number(n).toFixed(2);
+function sesionActiva() {
+  return store.sesiones.find(s => s.id === store.sesionActivaId) || store.sesiones[0];
 }
 
-// ======================
-// Cálculos globales
-// ======================
+// ---------- Persistencia ----------
+function cargar() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (raw) {
+    try {
+      store = JSON.parse(raw);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  // Migración desde v1 (sin sesiones)
+  if (!store.sesiones || store.sesiones.length === 0) {
+    const old = localStorage.getItem("calculadora_ganancias_v1");
+    if (old) {
+      try {
+        const oldData = JSON.parse(old);
+        const s = {
+          id: uid(),
+          nombre: "Principal",
+          lotes: oldData.lotes || [],
+          ventas: oldData.ventas || [],
+          precios: {}
+        };
+        store = { sesiones: [s], sesionActivaId: s.id };
+        guardar();
+      } catch (e) { /* ignore */ }
+    }
+  }
+
+  if (!store.sesiones || store.sesiones.length === 0) {
+    const s = { id: uid(), nombre: "Principal", lotes: [], ventas: [], precios: {} };
+    store = { sesiones: [s], sesionActivaId: s.id };
+    guardar();
+  }
+
+  if (!store.sesionActivaId || !store.sesiones.find(s => s.id === store.sesionActivaId)) {
+    store.sesionActivaId = store.sesiones[0].id;
+  }
+
+  // Asegurar campo precios
+  store.sesiones.forEach(s => {
+    if (!s.precios) s.precios = {};
+  });
+}
+
+function guardar() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+}
+
+// ---------- Navegación ----------
+function irA(nombre) {
+  document.querySelectorAll(".pantalla").forEach(p => p.classList.remove("active"));
+  document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
+
+  const pant = document.getElementById("pantalla-" + nombre);
+  if (pant) pant.classList.add("active");
+
+  const nav = document.querySelector(`.nav-item[data-pantalla="${nombre}"]`);
+  if (nav) nav.classList.add("active");
+
+  if (nombre === "grafico") setTimeout(renderGrafico, 60);
+  if (nombre === "venta") {
+    actualizarSelectProductos();
+    actualizarSelectPrecios();
+  }
+}
+
+// ---------- Sesiones ----------
+function renderSesionesSelect() {
+  const sel = document.getElementById("sesion-select");
+  sel.innerHTML = "";
+  store.sesiones.forEach(s => {
+    const opt = document.createElement("option");
+    opt.value = s.id;
+    opt.textContent = s.nombre;
+    if (s.id === store.sesionActivaId) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+
+function cambiarSesion(id) {
+  store.sesionActivaId = id;
+  guardar();
+  actualizarTodo();
+}
+
+function abrirModalSesion() {
+  modalSesionModo = "crear";
+  document.getElementById("modal-sesion-titulo").textContent = "Nueva sesión";
+  document.getElementById("modal-sesion-nombre").value = "";
+  document.getElementById("modal-sesion-ok").textContent = "Crear";
+  document.getElementById("modal-sesion").classList.remove("oculto");
+  setTimeout(() => document.getElementById("modal-sesion-nombre").focus(), 100);
+}
+
+function editarSesionActual() {
+  const s = sesionActiva();
+  if (!s) return;
+  modalSesionModo = "editar";
+  document.getElementById("modal-sesion-titulo").textContent = "Renombrar sesión";
+  document.getElementById("modal-sesion-nombre").value = s.nombre;
+  document.getElementById("modal-sesion-ok").textContent = "Guardar";
+  document.getElementById("modal-sesion").classList.remove("oculto");
+  setTimeout(() => document.getElementById("modal-sesion-nombre").focus(), 100);
+}
+
+function cerrarModalSesion() {
+  document.getElementById("modal-sesion").classList.add("oculto");
+}
+
+function guardarSesionModal() {
+  const nombre = document.getElementById("modal-sesion-nombre").value.trim();
+  if (!nombre) return alert("Escribe un nombre para la sesión.");
+
+  if (modalSesionModo === "crear") {
+    const s = { id: uid(), nombre, lotes: [], ventas: [], precios: {} };
+    store.sesiones.push(s);
+    store.sesionActivaId = s.id;
+  } else {
+    const s = sesionActiva();
+    if (s) s.nombre = nombre;
+  }
+  guardar();
+  cerrarModalSesion();
+  actualizarTodo();
+}
+
+function eliminarSesionActual() {
+  if (store.sesiones.length <= 1) {
+    return alert("No puedes eliminar la única sesión. Crea otra primero.");
+  }
+  const s = sesionActiva();
+  if (!confirm(`¿Eliminar la sesión "${s.nombre}" y TODOS sus datos?\nEsta acción no se puede deshacer.`)) return;
+
+  store.sesiones = store.sesiones.filter(x => x.id !== s.id);
+  store.sesionActivaId = store.sesiones[0].id;
+  guardar();
+  actualizarTodo();
+  alert("Sesión eliminada.");
+}
+
+// ---------- Cálculos ----------
 function calcularResumen() {
-  let invertido = 0;
-  let vendido = 0;
-  let ganancia = 0;
-  let stockActual = 0;
-
-  datos.lotes.forEach(lote => {
-    invertido += lote.costoTotal;
-    stockActual += lote.cantidadRestante;
+  const s = sesionActiva();
+  let invertido = 0, vendido = 0, ganancia = 0, stockActual = 0;
+  s.lotes.forEach(l => {
+    invertido += l.costoTotal;
+    stockActual += l.cantidadRestante;
   });
-
-  datos.ventas.forEach(v => {
+  s.ventas.forEach(v => {
     vendido += v.ingreso;
     ganancia += v.ganancia;
   });
-
   return { invertido, vendido, ganancia, stockActual };
 }
 
-// ======================
-// Render
-// ======================
+// ---------- Render ----------
 function renderResumen() {
   const r = calcularResumen();
   document.getElementById("res-invertido").textContent = dinero(r.invertido);
   document.getElementById("res-vendido").textContent = dinero(r.vendido);
-  document.getElementById("res-ganancia").textContent = dinero(r.ganancia);
-  document.getElementById("res-ganancia").className = "value " + (r.ganancia >= 0 ? "" : "negativo");
+  const gEl = document.getElementById("res-ganancia");
+  gEl.textContent = dinero(r.ganancia);
+  gEl.className = "value" + (r.ganancia < 0 ? " negativo" : "");
   document.getElementById("res-stock").textContent = r.stockActual + " uds";
 }
 
 function renderInventario() {
   const cont = document.getElementById("lista-inventario");
-  if (datos.lotes.length === 0) {
-    cont.innerHTML = `<div class="empty">No hay lotes todavía.<br>Agrega tu primera compra.</div>`;
+  const s = sesionActiva();
+
+  if (s.lotes.length === 0) {
+    cont.innerHTML = `<div class="empty">No hay productos todavía.<br>Agrega un lote desde Inicio.</div>`;
     return;
   }
 
-  // Agrupar por nombre de producto
   const productos = {};
-  datos.lotes.forEach(lote => {
+  s.lotes.forEach(lote => {
     if (!productos[lote.nombre]) {
       productos[lote.nombre] = {
         nombre: lote.nombre,
         lotes: [],
         totalRestante: 0,
-        costoPromedio: 0
+        costoTotalRestante: 0
       };
     }
     productos[lote.nombre].lotes.push(lote);
     productos[lote.nombre].totalRestante += lote.cantidadRestante;
+    productos[lote.nombre].costoTotalRestante += lote.costoUnitario * lote.cantidadRestante;
   });
 
-  let html = `<ul class="lista">`;
+  let html = "";
   Object.values(productos).forEach(p => {
-    const totalCosto = p.lotes.reduce((s, l) => s + (l.costoUnitario * l.cantidadRestante), 0);
-    const costoProm = p.totalRestante > 0 ? totalCosto / p.totalRestante : 0;
+    const costoProm = p.totalRestante > 0 ? p.costoTotalRestante / p.totalRestante : 0;
+    const precioDef = s.precios[p.nombre];
+    const agotado = p.totalRestante === 0;
 
     html += `
-      <li class="${p.totalRestante === 0 ? 'agotado' : ''}">
-        <div class="item-header">
-          <span class="item-nombre">${p.nombre}</span>
-          <span class="badge ${p.totalRestante > 0 ? 'stock' : 'agotado'}">
-            ${p.totalRestante > 0 ? p.totalRestante + ' en stock' : 'Agotado'}
-          </span>
+      <div class="prod-card ${agotado ? 'agotado' : ''}">
+        <div class="prod-nombre">${p.nombre}</div>
+        <div class="prod-grid">
+          <div><span>Stock</span><br><strong>${p.totalRestante} uds</strong></div>
+          <div><span>Lotes</span><br><strong>${p.lotes.length}</strong></div>
+          <div><span>Costo prom.</span><br><strong>${dinero(costoProm)}</strong></div>
+          <div><span>P. venta</span><br><strong>${precioDef != null ? dinero(precioDef) : "—"}</strong></div>
         </div>
-        <div class="item-detalle">
-          Costo promedio: ${dinero(costoProm)}<br>
-          Lotes: ${p.lotes.length}
+        <div class="prod-actions">
+          <button class="btn btn-secondary btn-small" onclick="abrirModalPrecio('${p.nombre.replace(/'/g, "\\'")}')">
+            ${precioDef != null ? "Cambiar precio" : "Poner precio"}
+          </button>
+          <button class="btn-eliminar" onclick="eliminarProducto('${p.nombre.replace(/'/g, "\\'")}')">
+            ✕ Eliminar producto
+          </button>
         </div>
-      </li>
+      </div>
     `;
   });
-  html += `</ul>`;
   cont.innerHTML = html;
 }
 
 function renderHistorial() {
   const cont = document.getElementById("lista-historial");
+  const s = sesionActiva();
   const items = [];
 
-  // Combinar lotes y ventas
-  datos.lotes.forEach(l => {
+  s.lotes.forEach(l => {
     items.push({
       tipo: "compra",
       id: l.id,
@@ -147,7 +272,7 @@ function renderHistorial() {
     });
   });
 
-  datos.ventas.forEach(v => {
+  s.ventas.forEach(v => {
     items.push({
       tipo: "venta",
       id: v.id,
@@ -157,7 +282,6 @@ function renderHistorial() {
     });
   });
 
-  // Ordenar por fecha desc
   items.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
 
   if (items.length === 0) {
@@ -174,7 +298,7 @@ function renderHistorial() {
           <span class="item-fecha">${formatearFecha(item.fecha)}</span>
         </div>
         <div class="item-detalle">${item.texto}</div>
-        <button class="btn-eliminar" onclick="eliminarMovimiento('${item.id}', '${item.tipo}')" title="Eliminar este movimiento">
+        <button class="btn-eliminar" onclick="eliminarMovimiento('${item.id}', '${item.tipo}')">
           ✕ Eliminar
         </button>
       </li>
@@ -184,24 +308,149 @@ function renderHistorial() {
   cont.innerHTML = html;
 }
 
+function renderGrafico() {
+  const canvas = document.getElementById("chartGanancias");
+  const vacio = document.getElementById("grafico-vacio");
+  const s = sesionActiva();
+  if (!canvas) return;
+
+  if (s.ventas.length === 0) {
+    vacio.classList.remove("oculto");
+    canvas.style.display = "none";
+    document.getElementById("stats-grafico").style.display = "none";
+    if (chartGanancias) { chartGanancias.destroy(); chartGanancias = null; }
+    return;
+  }
+
+  vacio.classList.add("oculto");
+  canvas.style.display = "block";
+  document.getElementById("stats-grafico").style.display = "grid";
+
+  const ventasOrd = [...s.ventas].sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+  const labels = [], ganancias = [], acumulado = [];
+  let suma = 0;
+
+  ventasOrd.forEach(v => {
+    const d = new Date(v.fecha);
+    labels.push(
+      d.toLocaleDateString("es-ES", { day: "2-digit", month: "short" }) +
+      " " + d.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })
+    );
+    ganancias.push(Number(v.ganancia.toFixed(2)));
+    suma += v.ganancia;
+    acumulado.push(Number(suma.toFixed(2)));
+  });
+
+  // Stats
+  const nums = ventasOrd.map(v => v.ganancia);
+  const promedio = nums.reduce((a, b) => a + b, 0) / nums.length;
+  const mejor = Math.max(...nums);
+  const peor = Math.min(...nums);
+
+  document.getElementById("stat-num-ventas").textContent = nums.length;
+  document.getElementById("stat-promedio").textContent = dinero(promedio);
+  document.getElementById("stat-mejor").textContent = dinero(mejor);
+  const peorEl = document.getElementById("stat-peor");
+  peorEl.textContent = dinero(peor);
+  peorEl.className = "stat-value" + (peor < 0 ? " neg" : "");
+
+  if (chartGanancias) chartGanancias.destroy();
+
+  const ctx = canvas.getContext("2d");
+  chartGanancias = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [
+        {
+          label: "Ganancia por venta",
+          data: ganancias,
+          backgroundColor: ganancias.map(g => g >= 0 ? "rgba(0,230,118,0.55)" : "rgba(255,82,82,0.55)"),
+          borderColor: ganancias.map(g => g >= 0 ? "#00e676" : "#ff5252"),
+          borderWidth: 1,
+          borderRadius: 4,
+          order: 2
+        },
+        {
+          label: "Ganancia acumulada",
+          data: acumulado,
+          type: "line",
+          borderColor: "#40c4ff",
+          backgroundColor: "rgba(64,196,255,0.1)",
+          borderWidth: 2,
+          pointRadius: 3,
+          pointBackgroundColor: "#40c4ff",
+          tension: 0.3,
+          fill: false,
+          order: 1
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: { labels: { color: "#ccc", font: { size: 11 } } },
+        tooltip: {
+          callbacks: {
+            label: ctx => ctx.dataset.label + ": $" + ctx.raw.toFixed(2)
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: "#888", maxRotation: 45, minRotation: 30, font: { size: 9 } },
+          grid: { color: "#2a2a2a" }
+        },
+        y: {
+          ticks: { color: "#888", callback: v => "$" + v },
+          grid: { color: "#2a2a2a" }
+        }
+      }
+    }
+  });
+}
+
 function actualizarSelectProductos() {
   const select = document.getElementById("venta-producto");
-  // Solo productos con stock
-  const conStock = datos.lotes.filter(l => l.cantidadRestante > 0);
-
-  // Agrupar por nombre
+  const s = sesionActiva();
+  const conStock = s.lotes.filter(l => l.cantidadRestante > 0);
   const nombres = [...new Set(conStock.map(l => l.nombre))];
 
   select.innerHTML = `<option value="">-- Selecciona producto --</option>`;
   nombres.forEach(n => {
-    const total = conStock.filter(l => l.nombre === n).reduce((s, l) => s + l.cantidadRestante, 0);
+    const total = conStock.filter(l => l.nombre === n).reduce((sum, l) => sum + l.cantidadRestante, 0);
     select.innerHTML += `<option value="${n}">${n} (${total} uds)</option>`;
   });
 }
 
-// ======================
-// Acciones
-// ======================
+function actualizarSelectPrecios() {
+  const select = document.getElementById("precio-producto");
+  const s = sesionActiva();
+  const nombres = [...new Set(s.lotes.map(l => l.nombre))];
+  select.innerHTML = `<option value="">-- Selecciona --</option>`;
+  nombres.forEach(n => {
+    const p = s.precios[n];
+    select.innerHTML += `<option value="${n}">${n}${p != null ? " (" + dinero(p) + ")" : ""}</option>`;
+  });
+}
+
+function onProductoVentaChange() {
+  const nombre = document.getElementById("venta-producto").value;
+  const box = document.getElementById("precio-auto-info");
+  const inputPrecio = document.getElementById("venta-precio");
+  const s = sesionActiva();
+
+  if (nombre && s.precios[nombre] != null) {
+    inputPrecio.value = s.precios[nombre];
+    box.textContent = `Precio predeterminado cargado: ${dinero(s.precios[nombre])}`;
+    box.classList.add("visible");
+  } else {
+    box.classList.remove("visible");
+  }
+}
+
+// ---------- Acciones: Lotes / Ventas ----------
 function agregarLote() {
   const nombre = document.getElementById("lote-nombre").value.trim();
   const costo = parseFloat(document.getElementById("lote-costo").value);
@@ -211,7 +460,8 @@ function agregarLote() {
   if (isNaN(costo) || costo < 0) return mostrarMensaje("lote-msg", "Costo inválido.", "error");
   if (isNaN(cantidad) || cantidad <= 0) return mostrarMensaje("lote-msg", "Cantidad debe ser mayor a 0.", "error");
 
-  const lote = {
+  const s = sesionActiva();
+  s.lotes.push({
     id: uid(),
     nombre,
     cantidadInicial: cantidad,
@@ -219,12 +469,12 @@ function agregarLote() {
     costoTotal: costo,
     costoUnitario: costo / cantidad,
     fecha: new Date().toISOString()
-  };
-
-  datos.lotes.push(lote);
+  });
   guardar();
-  limpiarFormulario("lote");
-  mostrarMensaje("lote-msg", `Lote de ${nombre} agregado correctamente.`, "exito");
+  document.getElementById("lote-nombre").value = "";
+  document.getElementById("lote-costo").value = "";
+  document.getElementById("lote-cantidad").value = "";
+  mostrarMensaje("lote-msg", `Lote de ${nombre} agregado.`, "exito");
   actualizarTodo();
 }
 
@@ -237,8 +487,8 @@ function registrarVenta() {
   if (isNaN(cantidad) || cantidad <= 0) return mostrarMensaje("venta-msg", "Cantidad inválida.", "error");
   if (isNaN(precio) || precio < 0) return mostrarMensaje("venta-msg", "Precio inválido.", "error");
 
-  // Buscar lotes con stock de ese producto (FIFO)
-  const lotesDisponibles = datos.lotes
+  const s = sesionActiva();
+  const lotesDisp = s.lotes
     .filter(l => l.nombre === nombre && l.cantidadRestante > 0)
     .sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
 
@@ -246,7 +496,7 @@ function registrarVenta() {
   let costoTotalVenta = 0;
   const detalles = [];
 
-  for (const lote of lotesDisponibles) {
+  for (const lote of lotesDisp) {
     if (pendiente <= 0) break;
     const tomar = Math.min(pendiente, lote.cantidadRestante);
     costoTotalVenta += tomar * lote.costoUnitario;
@@ -256,13 +506,13 @@ function registrarVenta() {
   }
 
   if (pendiente > 0) {
-    return mostrarMensaje("venta-msg", `No hay suficiente stock. Faltan ${pendiente} unidades.`, "error");
+    return mostrarMensaje("venta-msg", `No hay suficiente stock. Faltan ${pendiente} uds.`, "error");
   }
 
   const ingreso = precio * cantidad;
   const ganancia = ingreso - costoTotalVenta;
 
-  const venta = {
+  s.ventas.push({
     id: uid(),
     nombre,
     cantidad,
@@ -272,453 +522,276 @@ function registrarVenta() {
     ganancia,
     fecha: new Date().toISOString(),
     detalles
-  };
+  });
 
-  datos.ventas.push(venta);
   guardar();
-  limpiarFormulario("venta");
+  document.getElementById("venta-cantidad").value = "";
+  document.getElementById("venta-precio").value = "";
+  document.getElementById("precio-auto-info").classList.remove("visible");
   mostrarMensaje("venta-msg", `Venta registrada. Ganancia: ${dinero(ganancia)}`, "exito");
   actualizarTodo();
 }
 
-function borrarTodo() {
-  if (!confirm("¿Seguro que quieres borrar TODOS los datos? Esta acción no se puede deshacer.")) return;
-  datos = { lotes: [], ventas: [] };
+// ---------- Precios predeterminados ----------
+function guardarPrecioDefault() {
+  const nombre = document.getElementById("precio-producto").value;
+  const valor = parseFloat(document.getElementById("precio-valor").value);
+  if (!nombre) return mostrarMensaje("precio-msg", "Selecciona un producto.", "error");
+  if (isNaN(valor) || valor < 0) return mostrarMensaje("precio-msg", "Precio inválido.", "error");
+
+  const s = sesionActiva();
+  s.precios[nombre] = valor;
   guardar();
-  actualizarTodo();
-  alert("Datos borrados.");
+  document.getElementById("precio-valor").value = "";
+  mostrarMensaje("precio-msg", `Precio de ${nombre} guardado: ${dinero(valor)}`, "exito");
+  actualizarSelectPrecios();
+  renderInventario();
 }
 
-// Eliminar un movimiento individual (venta o compra)
+function abrirModalPrecio(nombre) {
+  modalPrecioProducto = nombre;
+  const s = sesionActiva();
+  document.getElementById("modal-precio-producto").textContent = nombre;
+  document.getElementById("modal-precio-valor").value = s.precios[nombre] != null ? s.precios[nombre] : "";
+  document.getElementById("modal-precio").classList.remove("oculto");
+}
+
+function cerrarModalPrecio() {
+  document.getElementById("modal-precio").classList.add("oculto");
+  modalPrecioProducto = null;
+}
+
+function confirmarPrecioModal() {
+  if (!modalPrecioProducto) return;
+  const valor = parseFloat(document.getElementById("modal-precio-valor").value);
+  if (isNaN(valor) || valor < 0) return alert("Precio inválido.");
+  const s = sesionActiva();
+  s.precios[modalPrecioProducto] = valor;
+  guardar();
+  cerrarModalPrecio();
+  renderInventario();
+  actualizarSelectPrecios();
+}
+
+// ---------- Eliminar ----------
+function eliminarProducto(nombre) {
+  const s = sesionActiva();
+  const lotesProd = s.lotes.filter(l => l.nombre === nombre);
+  const tieneVentas = s.ventas.some(v => v.nombre === nombre);
+
+  if (!confirm(`¿Eliminar el producto "${nombre}"?\n\nSe borrarán ${lotesProd.length} lote(s)${tieneVentas ? " y todas sus ventas" : ""}.`)) return;
+
+  s.lotes = s.lotes.filter(l => l.nombre !== nombre);
+  s.ventas = s.ventas.filter(v => v.nombre !== nombre);
+  delete s.precios[nombre];
+  guardar();
+  actualizarTodo();
+}
+
 function eliminarMovimiento(id, tipo) {
+  const s = sesionActiva();
+
   if (tipo === "venta") {
-    const venta = datos.ventas.find(v => v.id === id);
+    const venta = s.ventas.find(v => v.id === id);
     if (!venta) return alert("No se encontró la venta.");
+    if (!confirm(`¿Eliminar esta venta de "${venta.nombre}"?\nSe devolverán ${venta.cantidad} uds al stock.`)) return;
 
-    if (!confirm(`¿Eliminar esta venta de "${venta.nombre}"?\n\nSe devolverán ${venta.cantidad} unidades al stock y se restará la ganancia.`)) {
-      return;
-    }
-
-    // Devolver unidades a los lotes originales (usando los detalles FIFO)
     if (venta.detalles && venta.detalles.length > 0) {
       venta.detalles.forEach(d => {
-        const lote = datos.lotes.find(l => l.id === d.loteId);
-        if (lote) {
-          lote.cantidadRestante += d.cantidad;
-        }
+        const lote = s.lotes.find(l => l.id === d.loteId);
+        if (lote) lote.cantidadRestante += d.cantidad;
       });
     } else {
-      // Fallback por si no hay detalles (datos antiguos): devolver al primer lote del mismo producto
       let pendiente = venta.cantidad;
-      const lotesProducto = datos.lotes
-        .filter(l => l.nombre === venta.nombre)
-        .sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
-
-      for (const lote of lotesProducto) {
+      const lotesP = s.lotes.filter(l => l.nombre === venta.nombre).sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+      for (const lote of lotesP) {
         if (pendiente <= 0) break;
         const espacio = lote.cantidadInicial - lote.cantidadRestante;
-        const devolver = Math.min(pendiente, espacio);
-        lote.cantidadRestante += devolver;
-        pendiente -= devolver;
+        const dev = Math.min(pendiente, espacio);
+        lote.cantidadRestante += dev;
+        pendiente -= dev;
       }
     }
-
-    // Quitar la venta
-    datos.ventas = datos.ventas.filter(v => v.id !== id);
+    s.ventas = s.ventas.filter(v => v.id !== id);
     guardar();
     actualizarTodo();
     alert("Venta eliminada. Stock y ganancias actualizados.");
 
   } else if (tipo === "compra") {
-    const lote = datos.lotes.find(l => l.id === id);
+    const lote = s.lotes.find(l => l.id === id);
     if (!lote) return alert("No se encontró el lote.");
-
-    // Solo permitir borrar si no se ha vendido nada de ese lote
     if (lote.cantidadRestante !== lote.cantidadInicial) {
-      alert(`No se puede eliminar este lote porque ya se vendieron unidades de él.\n\nQuedan ${lote.cantidadRestante} de ${lote.cantidadInicial}.\nPrimero elimina las ventas relacionadas.`);
-      return;
+      return alert(`No se puede eliminar: ya se vendieron unidades de este lote.\nQuedan ${lote.cantidadRestante} de ${lote.cantidadInicial}.`);
     }
-
-    if (!confirm(`¿Eliminar este lote de compra de "${lote.nombre}"?\n\nSe restará del invertido.`)) {
-      return;
-    }
-
-    datos.lotes = datos.lotes.filter(l => l.id !== id);
+    if (!confirm(`¿Eliminar este lote de "${lote.nombre}"?`)) return;
+    s.lotes = s.lotes.filter(l => l.id !== id);
     guardar();
     actualizarTodo();
     alert("Lote eliminado.");
   }
 }
 
-// ======================
-// Exportar a CSV (bien estructurado)
-// ======================
+function borrarTodo() {
+  if (!confirm("¿Borrar TODOS los datos de esta sesión?\nNo se puede deshacer.")) return;
+  const s = sesionActiva();
+  s.lotes = [];
+  s.ventas = [];
+  s.precios = {};
+  guardar();
+  actualizarTodo();
+  alert("Datos de la sesión borrados.");
+}
+
+// ---------- CSV ----------
 function exportarCSV() {
-  if (datos.lotes.length === 0 && datos.ventas.length === 0) {
-    alert("No hay datos para exportar.");
-    return;
-  }
+  const s = sesionActiva();
+  if (s.lotes.length === 0 && s.ventas.length === 0) return alert("No hay datos para exportar.");
 
   const filas = [];
-
-  // Encabezado principal
   filas.push(["TIPO", "FECHA", "PRODUCTO", "CANTIDAD", "COSTO_UNITARIO", "COSTO_TOTAL", "PRECIO_VENTA_UNIT", "INGRESO", "GANANCIA", "STOCK_RESTANTE", "ID"]);
 
-  // Lotes (compras)
-  datos.lotes.forEach(l => {
-    filas.push([
-      "COMPRA",
-      l.fecha,
-      l.nombre,
-      l.cantidadInicial,
-      l.costoUnitario.toFixed(4),
-      l.costoTotal.toFixed(2),
-      "",
-      "",
-      "",
-      l.cantidadRestante,
-      l.id
-    ]);
+  s.lotes.forEach(l => {
+    filas.push(["COMPRA", l.fecha, l.nombre, l.cantidadInicial, l.costoUnitario.toFixed(4), l.costoTotal.toFixed(2), "", "", "", l.cantidadRestante, l.id]);
+  });
+  s.ventas.forEach(v => {
+    filas.push(["VENTA", v.fecha, v.nombre, v.cantidad, (v.costo / v.cantidad).toFixed(4), v.costo.toFixed(2), v.precioUnitario.toFixed(2), v.ingreso.toFixed(2), v.ganancia.toFixed(2), "", v.id]);
   });
 
-  // Ventas
-  datos.ventas.forEach(v => {
-    filas.push([
-      "VENTA",
-      v.fecha,
-      v.nombre,
-      v.cantidad,
-      (v.costo / v.cantidad).toFixed(4),
-      v.costo.toFixed(2),
-      v.precioUnitario.toFixed(2),
-      v.ingreso.toFixed(2),
-      v.ganancia.toFixed(2),
-      "",
-      v.id
-    ]);
-  });
-
-  // Separador + Resumen
   filas.push([]);
   filas.push(["=== RESUMEN ==="]);
   const r = calcularResumen();
   filas.push(["Total Invertido", r.invertido.toFixed(2)]);
   filas.push(["Total Vendido", r.vendido.toFixed(2)]);
   filas.push(["Ganancia Neta", r.ganancia.toFixed(2)]);
-  filas.push(["Stock Actual (unidades)", r.stockActual]);
-  filas.push([]);
-  filas.push(["Exportado el", new Date().toISOString()]);
-  filas.push(["Calculadora de Ganancias"]);
+  filas.push(["Stock Actual", r.stockActual]);
+  filas.push(["Sesion", s.nombre]);
+  filas.push(["Exportado", new Date().toISOString()]);
 
-  // Convertir a CSV (escapando comillas y comas)
-  const csvContent = filas.map(fila => {
-    return fila.map(campo => {
-      const str = String(campo ?? "");
-      if (str.includes(",") || str.includes('"') || str.includes("\n")) {
-        return `"${str.replace(/"/g, '""')}"`;
-      }
-      return str;
-    }).join(",");
-  }).join("\n");
+  const csv = filas.map(f => f.map(c => {
+    const str = String(c ?? "");
+    return (str.includes(",") || str.includes('"') || str.includes("\n")) ? `"${str.replace(/"/g, '""')}"` : str;
+  }).join(",")).join("\n");
 
-  // BOM para que Excel abra bien los acentos
-  const bom = "\uFEFF";
-  const blob = new Blob([bom + csvContent], { type: "text/csv;charset=utf-8;" });
+  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
-
   const a = document.createElement("a");
   a.href = url;
-  a.download = `ganancias_export_${new Date().toISOString().slice(0,10)}.csv`;
+  a.download = `ganancias_${s.nombre.replace(/\s+/g, "_")}_${new Date().toISOString().slice(0, 10)}.csv`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
 
-// ======================
-// Importar desde CSV
-// ======================
-function importarCSV(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-
-  if (!confirm("¿Importar este archivo CSV?\n\nSe REEMPLAZARÁN todos los datos actuales por los del archivo.\nAsegúrate de haber exportado antes si quieres conservar una copia.")) {
-    event.target.value = "";
-    return;
-  }
-
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    try {
-      let text = e.target.result;
-      // Quitar BOM si existe
-      if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
-
-      const lineas = text.split(/\r?\n/).filter(l => l.trim() !== "");
-      if (lineas.length < 2) throw new Error("Archivo vacío o inválido");
-
-      const nuevosLotes = [];
-      const nuevasVentas = [];
-
-      // Saltar la cabecera (primera línea)
-      for (let i = 1; i < lineas.length; i++) {
-        const linea = lineas[i].trim();
-        if (!linea || linea.startsWith("===") || linea.startsWith("Total ") || linea.startsWith("Exportado") || linea.startsWith("Calculadora") || linea.startsWith("Ganancia Neta") || linea.startsWith("Stock Actual")) {
-          continue;
-        }
-
-        // Parsear CSV simple (respetando comillas)
-        const cols = parseCSVLine(linea);
-        if (cols.length < 3) continue;
-
-        const tipo = (cols[0] || "").toUpperCase().trim();
-
-        if (tipo === "COMPRA") {
-          const cantidad = parseInt(cols[3]) || 0;
-          const costoUnitario = parseFloat(cols[4]) || 0;
-          const costoTotal = parseFloat(cols[5]) || 0;
-          const stockRestante = parseInt(cols[9]) || cantidad;
-          const id = cols[10] || uid();
-
-          nuevosLotes.push({
-            id: id,
-            nombre: cols[2] || "Sin nombre",
-            cantidadInicial: cantidad,
-            cantidadRestante: stockRestante,
-            costoTotal: costoTotal,
-            costoUnitario: costoUnitario,
-            fecha: cols[1] || new Date().toISOString()
-          });
-        } else if (tipo === "VENTA") {
-          const cantidad = parseInt(cols[3]) || 0;
-          const costoUnitario = parseFloat(cols[4]) || 0;
-          const costoTotal = parseFloat(cols[5]) || 0;
-          const precioUnitario = parseFloat(cols[6]) || 0;
-          const ingreso = parseFloat(cols[7]) || (precioUnitario * cantidad);
-          const ganancia = parseFloat(cols[8]) || (ingreso - costoTotal);
-          const id = cols[10] || uid();
-
-          nuevasVentas.push({
-            id: id,
-            nombre: cols[2] || "Sin nombre",
-            cantidad: cantidad,
-            precioUnitario: precioUnitario,
-            ingreso: ingreso,
-            costo: costoTotal,
-            ganancia: ganancia,
-            fecha: cols[1] || new Date().toISOString(),
-            detalles: [] // no tenemos detalles en el CSV, se usará fallback al eliminar
-          });
-        }
-      }
-
-      // Reemplazar datos
-      datos.lotes = nuevosLotes;
-      datos.ventas = nuevasVentas;
-      guardar();
-      actualizarTodo();
-
-      alert(`Importación exitosa.\n\nLotes restaurados: ${nuevosLotes.length}\nVentas restauradas: ${nuevasVentas.length}`);
-    } catch (err) {
-      console.error(err);
-      alert("Error al importar el CSV.\nAsegúrate de que sea un archivo exportado desde esta misma aplicación.");
-    }
-
-    // Limpiar el input para poder volver a seleccionar el mismo archivo
-    event.target.value = "";
-  };
-
-  reader.readAsText(file, "UTF-8");
-}
-
-// Parser simple de una línea CSV (soporta comillas)
 function parseCSVLine(line) {
   const result = [];
-  let current = "";
-  let inQuotes = false;
-
+  let current = "", inQuotes = false;
   for (let i = 0; i < line.length; i++) {
     const char = line[i];
     if (char === '"') {
-      if (inQuotes && line[i + 1] === '"') {
-        current += '"';
-        i++;
-      } else {
-        inQuotes = !inQuotes;
-      }
+      if (inQuotes && line[i + 1] === '"') { current += '"'; i++; }
+      else inQuotes = !inQuotes;
     } else if (char === "," && !inQuotes) {
-      result.push(current);
-      current = "";
-    } else {
-      current += char;
-    }
+      result.push(current); current = "";
+    } else current += char;
   }
   result.push(current);
   return result;
 }
 
-// ======================
-// Helpers UI
-// ======================
+function importarCSV(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  if (!confirm("¿Importar este CSV?\nSe REEMPLAZARÁN los datos de la sesión actual.")) {
+    event.target.value = "";
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    try {
+      let text = e.target.result;
+      if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+      const lineas = text.split(/\r?\n/).filter(l => l.trim());
+      if (lineas.length < 2) throw new Error("Archivo vacío");
+
+      const nuevosLotes = [], nuevasVentas = [];
+
+      for (let i = 1; i < lineas.length; i++) {
+        const linea = lineas[i].trim();
+        if (!linea || linea.startsWith("===") || linea.startsWith("Total") || linea.startsWith("Exportado") || linea.startsWith("Sesion") || linea.startsWith("Ganancia") || linea.startsWith("Stock") || linea.startsWith("Calculadora")) continue;
+
+        const cols = parseCSVLine(linea);
+        if (cols.length < 3) continue;
+        const tipo = (cols[0] || "").toUpperCase().trim();
+
+        if (tipo === "COMPRA") {
+          const cantidad = parseInt(cols[3]) || 0;
+          nuevosLotes.push({
+            id: cols[10] || uid(),
+            nombre: cols[2] || "Sin nombre",
+            cantidadInicial: cantidad,
+            cantidadRestante: parseInt(cols[9]) || cantidad,
+            costoTotal: parseFloat(cols[5]) || 0,
+            costoUnitario: parseFloat(cols[4]) || 0,
+            fecha: cols[1] || new Date().toISOString()
+          });
+        } else if (tipo === "VENTA") {
+          const cantidad = parseInt(cols[3]) || 0;
+          const costoTotal = parseFloat(cols[5]) || 0;
+          const precioUnitario = parseFloat(cols[6]) || 0;
+          const ingreso = parseFloat(cols[7]) || precioUnitario * cantidad;
+          nuevasVentas.push({
+            id: cols[10] || uid(),
+            nombre: cols[2] || "Sin nombre",
+            cantidad,
+            precioUnitario,
+            ingreso,
+            costo: costoTotal,
+            ganancia: parseFloat(cols[8]) || (ingreso - costoTotal),
+            fecha: cols[1] || new Date().toISOString(),
+            detalles: []
+          });
+        }
+      }
+
+      const s = sesionActiva();
+      s.lotes = nuevosLotes;
+      s.ventas = nuevasVentas;
+      guardar();
+      actualizarTodo();
+      alert(`Importado.\nLotes: ${nuevosLotes.length}\nVentas: ${nuevasVentas.length}`);
+    } catch (err) {
+      console.error(err);
+      alert("Error al importar. Usa un CSV exportado desde esta app.");
+    }
+    event.target.value = "";
+  };
+  reader.readAsText(file, "UTF-8");
+}
+
+// ---------- UI helpers ----------
 function mostrarMensaje(id, texto, tipo) {
   const el = document.getElementById(id);
+  if (!el) return;
   el.textContent = texto;
   el.className = "mensaje " + tipo;
   el.classList.remove("oculto");
   setTimeout(() => el.classList.add("oculto"), 4000);
 }
 
-function limpiarFormulario(tipo) {
-  if (tipo === "lote") {
-    document.getElementById("lote-nombre").value = "";
-    document.getElementById("lote-costo").value = "";
-    document.getElementById("lote-cantidad").value = "";
-  } else {
-    document.getElementById("venta-cantidad").value = "";
-    document.getElementById("venta-precio").value = "";
-  }
-}
-
-function cambiarTab(tabId) {
-  // Tabs
-  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
-  document.querySelector(`[data-tab="${tabId}"]`).classList.add("active");
-
-  // Sections
-  document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
-  document.getElementById("sec-" + tabId).classList.add("active");
-
-  // Re-render chart when opening the tab (fixes size issues)
-  if (tabId === "grafico") {
-    setTimeout(renderGrafico, 50);
-  }
-}
-
-function renderGrafico() {
-  const canvas = document.getElementById("chartGanancias");
-  const vacio = document.getElementById("grafico-vacio");
-
-  if (!canvas) return;
-
-  // Si no hay ventas
-  if (datos.ventas.length === 0) {
-    vacio.classList.remove("oculto");
-    canvas.style.display = "none";
-    if (chartGanancias) {
-      chartGanancias.destroy();
-      chartGanancias = null;
-    }
-    return;
-  }
-
-  vacio.classList.add("oculto");
-  canvas.style.display = "block";
-
-  // Ordenar ventas por fecha ascendente
-  const ventasOrdenadas = [...datos.ventas].sort(
-    (a, b) => new Date(a.fecha) - new Date(b.fecha)
-  );
-
-  const labels = [];
-  const ganancias = [];
-  const acumulado = [];
-  let suma = 0;
-
-  ventasOrdenadas.forEach(v => {
-    const d = new Date(v.fecha);
-    labels.push(
-      d.toLocaleDateString("es-ES", { day: "2-digit", month: "short" }) +
-      " " + d.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })
-    );
-    ganancias.push(Number(v.ganancia.toFixed(2)));
-    suma += v.ganancia;
-    acumulado.push(Number(suma.toFixed(2)));
-  });
-
-  // Destruir gráfico anterior si existe
-  if (chartGanancias) {
-    chartGanancias.destroy();
-  }
-
-  const ctx = canvas.getContext("2d");
-  chartGanancias = new Chart(ctx, {
-    type: "bar",
-    data: {
-      labels: labels,
-      datasets: [
-        {
-          label: "Ganancia por venta",
-          data: ganancias,
-          backgroundColor: ganancias.map(g => g >= 0 ? "rgba(0, 255, 0, 0.6)" : "rgba(255, 80, 80, 0.6)"),
-          borderColor: ganancias.map(g => g >= 0 ? "#0f0" : "#f55"),
-          borderWidth: 1,
-          borderRadius: 4,
-          order: 2
-        },
-        {
-          label: "Ganancia acumulada",
-          data: acumulado,
-          type: "line",
-          borderColor: "#0af",
-          backgroundColor: "rgba(0, 170, 255, 0.1)",
-          borderWidth: 2,
-          pointRadius: 4,
-          pointBackgroundColor: "#0af",
-          tension: 0.3,
-          fill: false,
-          order: 1
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: true,
-      plugins: {
-        legend: {
-          labels: { color: "#ccc", font: { size: 12 } }
-        },
-        tooltip: {
-          callbacks: {
-            label: function(context) {
-              return context.dataset.label + ": $" + context.raw.toFixed(2);
-            }
-          }
-        }
-      },
-      scales: {
-        x: {
-          ticks: { color: "#888", maxRotation: 45, minRotation: 30, font: { size: 10 } },
-          grid: { color: "#333" }
-        },
-        y: {
-          ticks: {
-            color: "#888",
-            callback: function(value) { return "$" + value; }
-          },
-          grid: { color: "#333" }
-        }
-      }
-    }
-  });
-}
-
 function actualizarTodo() {
+  renderSesionesSelect();
   renderResumen();
   renderInventario();
   renderHistorial();
   actualizarSelectProductos();
+  actualizarSelectPrecios();
   renderGrafico();
 }
 
-// ======================
-// Inicio
-// ======================
+// ---------- Init ----------
 document.addEventListener("DOMContentLoaded", () => {
   cargar();
   actualizarTodo();
-
-  // Eventos tabs
-  document.querySelectorAll(".tab").forEach(btn => {
-    btn.addEventListener("click", () => cambiarTab(btn.dataset.tab));
-  });
 });

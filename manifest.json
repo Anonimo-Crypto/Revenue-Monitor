@@ -1,11 +1,11 @@
 {
   "name": "Calculadora de Ganancias",
   "short_name": "Ganancias",
-  "description": "Control de lotes, inventario y seguimiento de ventas",
+  "description": "Control de lotes, inventario, ventas y múltiples sesiones",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#111111",
-  "theme_color": "#111111",
+  "background_color": "#0d0d0d",
+  "theme_color": "#0d0d0d",
   "orientation": "portrait",
   "icons": [
     {

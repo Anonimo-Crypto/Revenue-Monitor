@@ -3,24 +3,26 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#111111">
-  <meta name="description" content="Calculadora de ganancias con lotes, inventario y seguimiento de ventas">
+  <meta name="theme-color" content="#0d0d0d">
+  <meta name="description" content="Calculadora de ganancias con sesiones, lotes, inventario y seguimiento de ventas">
   <title>Calculadora de Ganancias</title>
 
-  <!-- PWA -->
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" sizes="192x192" href="192.png">
   <link rel="apple-touch-icon" href="192.png">
-
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
-  <h1>Calculadora de Ganancias</h1>
-  <p class="subtitle">Lotes • Inventario • Ventas • Historial • Gráfico</p>
+  <!-- TOP BAR: sesiones -->
+  <div class="topbar">
+    <button class="btn-add-sesion" onclick="abrirModalSesion()" title="Nueva sesión">+</button>
+    <select class="sesion-select" id="sesion-select" onchange="cambiarSesion(this.value)"></select>
+    <button class="btn-edit-sesion" onclick="editarSesionActual()" title="Editar nombre">✎</button>
+  </div>
 
-  <!-- Resumen -->
+  <!-- RESUMEN (siempre visible) -->
   <div class="resumen">
     <div class="resumen-item">
       <div class="label">Invertido</div>
@@ -40,25 +42,16 @@
     </div>
   </div>
 
-  <!-- Tabs -->
-  <div class="tabs">
-    <button class="tab active" data-tab="lote">+ Lote</button>
-    <button class="tab" data-tab="venta">Venta</button>
-    <button class="tab" data-tab="inventario">Inventario</button>
-    <button class="tab" data-tab="historial">Historial</button>
-    <button class="tab" data-tab="grafico">Gráfico</button>
-  </div>
-
-  <!-- SECCIÓN: Agregar Lote -->
-  <div id="sec-lote" class="section active">
+  <!-- ========== PANTALLA: INICIO ========== -->
+  <div id="pantalla-inicio" class="pantalla active">
     <div class="card">
-      <h2>Agregar Lote (Compra)</h2>
+      <h3>Agregar Lote (Compra)</h3>
       <div id="lote-msg" class="mensaje oculto"></div>
 
       <label>Nombre del producto</label>
-      <input type="text" id="lote-nombre" placeholder="Ej: Camiseta negra">
+      <input type="text" id="lote-nombre" placeholder="Ej: Caramelos Duros">
 
-      <label>Costo total del lote (pesos)</label>
+      <label>Costo total del lote</label>
       <input type="number" id="lote-costo" min="0" step="0.01" placeholder="0.00">
 
       <label>Cantidad de unidades</label>
@@ -66,18 +59,25 @@
 
       <button class="btn" onclick="agregarLote()">Guardar Lote</button>
     </div>
+
+    <div class="firma">
+      Oscar Antonio Alvarez Collado<br>
+      Copyright © 2026
+    </div>
   </div>
 
-  <!-- SECCIÓN: Registrar Venta -->
-  <div id="sec-venta" class="section">
+  <!-- ========== PANTALLA: VENTA ========== -->
+  <div id="pantalla-venta" class="pantalla">
+    <h2>Registrar Venta</h2>
     <div class="card">
-      <h2>Registrar Venta</h2>
       <div id="venta-msg" class="mensaje oculto"></div>
 
       <label>Producto</label>
-      <select id="venta-producto">
+      <select id="venta-producto" onchange="onProductoVentaChange()">
         <option value="">-- Selecciona producto --</option>
       </select>
+
+      <div id="precio-auto-info" class="precio-auto-box"></div>
 
       <label>Cantidad a vender</label>
       <input type="number" id="venta-cantidad" min="1" step="1" placeholder="1">
@@ -87,64 +87,161 @@
 
       <button class="btn" onclick="registrarVenta()">Registrar Venta</button>
     </div>
-  </div>
 
-  <!-- SECCIÓN: Inventario -->
-  <div id="sec-inventario" class="section">
     <div class="card">
-      <h2>Inventario actual</h2>
-      <div id="lista-inventario"></div>
+      <h3>Precio predeterminado</h3>
+      <p style="font-size:0.82rem;color:#888;margin-bottom:10px;">
+        Asigna un precio fijo a un producto. Al venderlo se cargará automáticamente.
+      </p>
+
+      <label>Producto</label>
+      <select id="precio-producto">
+        <option value="">-- Selecciona --</option>
+      </select>
+
+      <label>Precio de venta</label>
+      <input type="number" id="precio-valor" min="0" step="0.01" placeholder="0.00">
+
+      <button class="btn btn-secondary" onclick="guardarPrecioDefault()">Guardar precio</button>
+      <div id="precio-msg" class="mensaje oculto" style="margin-top:10px"></div>
     </div>
   </div>
 
-  <!-- SECCIÓN: Historial -->
-  <div id="sec-historial" class="section">
-    <div class="card">
-      <h2>Historial de movimientos</h2>
-      <div id="lista-historial"></div>
-
-      <button class="btn btn-secondary" onclick="exportarCSV()" style="margin-top:16px">
-        📥 Exportar datos a CSV
-      </button>
-
-      <button class="btn btn-secondary" onclick="document.getElementById('input-importar').click()" style="margin-top:10px">
-        📤 Importar datos desde CSV
-      </button>
-      <input type="file" id="input-importar" accept=".csv,text/csv" style="display:none" onchange="importarCSV(event)">
-
-      <button class="btn btn-danger" onclick="borrarTodo()" style="margin-top:10px">
-        Borrar todos los datos
-      </button>
-    </div>
+  <!-- ========== PANTALLA: INVENTARIO ========== -->
+  <div id="pantalla-inventario" class="pantalla">
+    <h2>Inventario</h2>
+    <div id="lista-inventario"></div>
   </div>
 
-  <!-- SECCIÓN: Gráfico -->
-  <div id="sec-grafico" class="section">
+  <!-- ========== PANTALLA: GRÁFICO ========== -->
+  <div id="pantalla-grafico" class="pantalla">
+    <h2>Gráfico de Ganancias</h2>
     <div class="card">
-      <h2>Gráfico de Ganancias</h2>
       <div id="grafico-vacio" class="empty oculto">
         Aún no hay ventas registradas.<br>Registra ventas para ver el gráfico.
       </div>
       <div class="chart-container">
         <canvas id="chartGanancias"></canvas>
       </div>
+      <div class="stats-grid" id="stats-grafico">
+        <div class="stat-box">
+          <div class="stat-label">Nº Ventas</div>
+          <div class="stat-value" id="stat-num-ventas">0</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Ganancia prom.</div>
+          <div class="stat-value" id="stat-promedio">$0</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Mejor venta</div>
+          <div class="stat-value" id="stat-mejor">$0</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Peor venta</div>
+          <div class="stat-value" id="stat-peor">$0</div>
+        </div>
+      </div>
     </div>
   </div>
 
-  <footer>
-    Datos guardados en tu dispositivo · PWA<br>
-    <span style="font-size:0.7rem; color:#444;">
-      Copyright © 2026 · Todos los derechos reservados
-    </span>
-  </footer>
+  <!-- ========== PANTALLA: HISTORIAL ========== -->
+  <div id="pantalla-historial" class="pantalla">
+    <h2>Historial</h2>
+    <div class="card">
+      <div id="lista-historial"></div>
+    </div>
+  </div>
+
+  <!-- ========== PANTALLA: DATOS ========== -->
+  <div id="pantalla-datos" class="pantalla">
+    <h2>Datos</h2>
+    <div class="card">
+      <h3>Respaldo</h3>
+      <p style="font-size:0.82rem;color:#888;margin-bottom:8px;">
+        Exporta o importa todos los datos de la sesión actual.
+      </p>
+      <button class="btn btn-secondary" onclick="exportarCSV()">📥 Exportar a CSV</button>
+      <button class="btn btn-secondary" onclick="document.getElementById('input-importar').click()" style="margin-top:10px">
+        📤 Importar desde CSV
+      </button>
+      <input type="file" id="input-importar" accept=".csv,text/csv" style="display:none" onchange="importarCSV(event)">
+    </div>
+
+    <div class="card">
+      <h3>Zona de peligro</h3>
+      <button class="btn btn-danger" onclick="borrarTodo()">Borrar todos los datos de esta sesión</button>
+      <button class="btn btn-danger" onclick="eliminarSesionActual()" style="margin-top:10px">
+        Eliminar esta sesión completa
+      </button>
+    </div>
+
+    <div class="firma">
+      Oscar Antonio Alvarez Collado<br>
+      Copyright © 2026
+    </div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <nav class="bottom-nav">
+    <button class="nav-item active" data-pantalla="inicio" onclick="irA('inicio')">
+      <span class="nav-icon">🏠</span>
+      Inicio
+    </button>
+    <button class="nav-item" data-pantalla="venta" onclick="irA('venta')">
+      <span class="nav-icon">💰</span>
+      Venta
+    </button>
+    <button class="nav-item" data-pantalla="inventario" onclick="irA('inventario')">
+      <span class="nav-icon">📦</span>
+      Inventario
+    </button>
+    <button class="nav-item" data-pantalla="grafico" onclick="irA('grafico')">
+      <span class="nav-icon">📊</span>
+      Gráfico
+    </button>
+    <button class="nav-item" data-pantalla="historial" onclick="irA('historial')">
+      <span class="nav-icon">📜</span>
+      Historial
+    </button>
+    <button class="nav-item" data-pantalla="datos" onclick="irA('datos')">
+      <span class="nav-icon">⚙️</span>
+      Datos
+    </button>
+  </nav>
+
+  <!-- MODAL NUEVA / EDITAR SESIÓN -->
+  <div id="modal-sesion" class="modal-overlay oculto">
+    <div class="modal">
+      <h3 id="modal-sesion-titulo">Nueva sesión</h3>
+      <label>Nombre de la sesión</label>
+      <input type="text" id="modal-sesion-nombre" placeholder="Ej: Tienda de Dulces">
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="cerrarModalSesion()">Cancelar</button>
+        <button class="btn" id="modal-sesion-ok" onclick="guardarSesionModal()">Crear</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL PRECIO PRODUCTO -->
+  <div id="modal-precio" class="modal-overlay oculto">
+    <div class="modal">
+      <h3>Precio de venta</h3>
+      <p id="modal-precio-producto" style="color:#ccc;margin-bottom:10px;font-size:0.9rem"></p>
+      <label>Precio predeterminado</label>
+      <input type="number" id="modal-precio-valor" min="0" step="0.01" placeholder="0.00">
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="cerrarModalPrecio()">Cancelar</button>
+        <button class="btn" onclick="confirmarPrecioModal()">Guardar</button>
+      </div>
+    </div>
+  </div>
 
   <script src="main.js"></script>
   <script>
-    // Registrar Service Worker
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("sw.js")
-        .then(() => console.log("SW registrado"))
-        .catch(err => console.log("Error SW:", err));
+        .then(() => console.log("SW ok"))
+        .catch(err => console.log("SW error:", err));
     }
   </script>
 </body>

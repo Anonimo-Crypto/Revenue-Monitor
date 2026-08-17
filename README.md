@@ -1,95 +1,71 @@
 # Calculadora de Ganancias
 
-Aplicación web progresiva (PWA) para controlar **lotes de compra**, **inventario** y **seguimiento de ventas**.  
-Todo se guarda localmente en el navegador y funciona offline.
+Aplicación web progresiva (PWA) para controlar **lotes de compra**, **inventario**, **ventas** y **ganancias**, con soporte de **múltiples sesiones** (negocios independientes).
+
+**Autor:** Oscar Antonio Alvarez Collado  
+**Copyright © 2026**
 
 ---
 
 ## Características
 
+- **Sesiones múltiples** — separa negocios (ej: "Tienda de Dulces", "Tienda de Ropa")
 - **Agregar lotes** (compras) con nombre, costo total y cantidad
-- **Registrar ventas** con cálculo automático de ganancia (método FIFO)
-- **Inventario** en tiempo real agrupado por producto
-- **Resumen** de: Invertido · Vendido · Ganancia · Stock actual
-- **Historial** completo de todos los movimientos
-- **Eliminar movimientos individuales** (borra una venta y devuelve el stock + corrige la ganancia)
-- **Exportar e Importar CSV** (puedes hacer respaldo y restaurar tus datos)
-- **Gráfico de ganancias** (barras por venta + línea de ganancia acumulada)
-- **PWA**: se puede instalar en el celular y funciona sin internet
-- Datos persistentes con `localStorage`
+- **Registrar ventas** con cálculo automático de ganancia (FIFO)
+- **Precios predeterminados** por producto (se cargan solos al vender)
+- **Inventario** detallado: stock, lotes, costo promedio, precio de venta, eliminar producto
+- **Historial** completo con eliminación individual de movimientos
+- **Gráfico de ganancias** (barras + línea acumulada + estadísticas)
+- **Exportar e Importar CSV** (respaldo y restauración)
+- **PWA** instalable y funciona offline
+- Datos persistentes en `localStorage`
 
 ---
 
-## Archivos del proyecto
+## Navegación
+
+| Pestaña      | Contenido                                      |
+|--------------|------------------------------------------------|
+| 🏠 Inicio    | Agregar lotes de compra                        |
+| 💰 Venta     | Registrar ventas + precios predeterminados     |
+| 📦 Inventario| Stock, detalles y eliminar productos           |
+| 📊 Gráfico   | Visualización de ganancias y estadísticas      |
+| 📜 Historial | Todos los movimientos + eliminar individual    |
+| ⚙️ Datos     | Exportar / Importar / Borrar datos             |
+
+---
+
+## Archivos
 
 ```
-├── index.html      → Estructura principal
-├── main.js         → Lógica de la aplicación
-├── style.css       → Estilos
-├── manifest.json   → Configuración PWA
-├── sw.js           → Service Worker (offline)
-├── 192.png         → Icono 192×192
-├── 512.png         → Icono 512×512
-└── README.md       → Este archivo
+├── index.html
+├── main.js
+├── style.css
+├── manifest.json
+├── sw.js
+├── 192.png
+├── 512.png
+└── README.md
 ```
 
 ---
 
 ## Cómo usar
 
-1. Abre `index.html` en cualquier navegador moderno  
-   **o** sube todos los archivos a un hosting estático (GitHub Pages, Netlify, etc.)
-2. Para instalarla como app en el celular: abre el sitio → menú del navegador → "Agregar a la pantalla de inicio"
-
-### Flujo recomendado
-1. Ve a la pestaña **+ Lote** y registra tus compras
-2. Cuando vendas, ve a **Venta** y registra la venta
-3. Revisa el **Inventario** y el **Historial** cuando quieras
-4. Usa **Exportar datos a CSV** para guardar un respaldo
+1. Abre `index.html` o publica en GitHub Pages / Netlify
+2. Instala como app desde el navegador del móvil
+3. Crea sesiones con el botón **+** (arriba a la izquierda)
+4. Agrega lotes → registra ventas → revisa ganancias
 
 ---
 
-## Estructura del CSV exportado
-
-El archivo CSV contiene:
-
-| Columna              | Descripción                              |
-|----------------------|------------------------------------------|
-| TIPO                 | `COMPRA` o `VENTA`                       |
-| FECHA                | Fecha y hora en formato ISO              |
-| PRODUCTO             | Nombre del producto                      |
-| CANTIDAD             | Unidades compradas o vendidas            |
-| COSTO_UNITARIO       | Costo por unidad                         |
-| COSTO_TOTAL          | Costo total del movimiento               |
-| PRECIO_VENTA_UNIT    | Precio de venta por unidad (solo ventas) |
-| INGRESO              | Ingreso total de la venta                |
-| GANANCIA             | Ganancia neta de la venta                |
-| STOCK_RESTANTE       | Unidades que quedan del lote (compras)   |
-| ID                   | Identificador único del registro         |
-
-Al final del archivo se incluye un **resumen** con totales.
-
----
-
-## Tecnologías
-
-- HTML5 · CSS3 · JavaScript (vanilla)
-- Progressive Web App (manifest + Service Worker)
-- localStorage para persistencia
-
----
-
-## Licencia y Copyright
+## Licencia
 
 ```
-Copyright © 2026
+Copyright © 2026 Oscar Antonio Alvarez Collado
 Todos los derechos reservados.
 
-Este software se entrega "tal cual", sin garantías de ningún tipo.
-Puedes usarlo, modificarlo y distribuirlo libremente para uso personal
-o educativo. Si lo redistribuyes, mantén este aviso de copyright.
+Este software se entrega "tal cual".
+Puedes usarlo y modificarlo para uso personal o educativo.
+Si lo redistribuyes, mantén este aviso de copyright.
 ```
-
----
-
-Hecho con ❤️ para control simple de ganancias.
