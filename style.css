@@ -1,11 +1,7 @@
-/* Calculadora de Ganancias - Copyright © 2026
-   Oscar Antonio Alvarez Collado */
+/* Calculadora de Ganancias
+   Copyright © 2026 Oscar Antonio Alvarez Collado */
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
   --bg: #0d0d0d;
@@ -18,7 +14,6 @@
   --green-dim: #00c853;
   --blue: #40c4ff;
   --red: #ff5252;
-  --orange: #ffab40;
 }
 
 body {
@@ -32,7 +27,7 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* ========== TOP BAR ========== */
+/* TOP BAR */
 .topbar {
   display: flex;
   align-items: center;
@@ -46,25 +41,15 @@ body {
 }
 
 .btn-add-sesion {
-  width: 36px;
-  height: 36px;
+  width: 36px; height: 36px;
   border-radius: 50%;
   border: none;
   background: var(--green);
-  color: #111;
-  font-size: 1.4rem;
-  font-weight: bold;
   cursor: pointer;
   flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
+  display: flex; align-items: center; justify-content: center;
 }
-
-.btn-add-sesion:active {
-  transform: scale(0.92);
-}
+.btn-add-sesion:active { transform: scale(0.92); }
 
 .sesion-select {
   flex: 1;
@@ -83,18 +68,17 @@ body {
   color: var(--muted);
   border-radius: 8px;
   padding: 8px 10px;
-  font-size: 0.8rem;
   cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
 }
 
-/* ========== RESUMEN ========== */
+/* RESUMEN */
 .resumen {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
   padding: 12px 14px;
 }
-
 .resumen-item {
   background: var(--card);
   border-radius: 10px;
@@ -102,42 +86,32 @@ body {
   text-align: center;
   border: 1px solid var(--border);
 }
-
 .resumen-item .label {
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   color: var(--muted);
   text-transform: uppercase;
-  letter-spacing: 0.4px;
+  letter-spacing: 0.3px;
   margin-bottom: 4px;
 }
-
 .resumen-item .value {
-  font-size: 1.15rem;
+  font-size: 1.1rem;
   font-weight: 700;
   color: var(--green);
 }
+.resumen-item .value.negativo { color: var(--red); }
 
-.resumen-item .value.negativo {
-  color: var(--red);
-}
+.detalle-resumen { padding: 0 0 12px; }
 
-/* ========== PANTALLAS ========== */
-.pantalla {
-  display: none;
-  padding: 0 14px 20px;
-}
-
-.pantalla.active {
-  display: block;
-}
-
+/* PANTALLAS */
+.pantalla { display: none; padding: 0 14px 20px; }
+.pantalla.active { display: block; }
 .pantalla h2 {
   color: var(--green);
   font-size: 1.15rem;
   margin: 8px 0 14px;
 }
 
-/* ========== CARDS ========== */
+/* CARDS */
 .card {
   background: var(--card);
   border-radius: 12px;
@@ -145,12 +119,9 @@ body {
   margin-bottom: 12px;
   border: 1px solid var(--border);
 }
+.card h3 { color: var(--green); font-size: 1rem; margin-bottom: 10px; }
 
-.card h3 {
-  color: var(--green);
-  font-size: 1rem;
-  margin-bottom: 12px;
-}
+.hint { font-size: 0.82rem; color: var(--muted); margin-bottom: 10px; line-height: 1.4; }
 
 label {
   display: block;
@@ -158,10 +129,7 @@ label {
   font-size: 0.85rem;
   color: var(--muted);
 }
-
-label:first-of-type {
-  margin-top: 0;
-}
+label:first-of-type { margin-top: 0; }
 
 input, select {
   width: 100%;
@@ -173,13 +141,12 @@ input, select {
   color: var(--text);
   font-size: 1rem;
 }
-
 input:focus, select:focus {
   outline: 2px solid var(--green);
   border-color: transparent;
 }
 
-/* ========== BOTONES ========== */
+/* BOTONES */
 .btn {
   margin-top: 14px;
   padding: 13px;
@@ -192,39 +159,35 @@ input:focus, select:focus {
   font-size: 1rem;
   color: #111;
 }
-
-.btn:active {
-  background: var(--green-dim);
-}
+.btn:active { background: var(--green-dim); }
 
 .btn-secondary {
   background: var(--card2);
   color: var(--text);
   border: 1px solid var(--border);
 }
-
-.btn-secondary:active {
-  background: #2a2a2a;
-}
+.btn-secondary:active { background: #2a2a2a; }
 
 .btn-danger {
   background: #3a1515;
   color: var(--red);
   border: 1px solid #a33;
 }
+.btn-danger:active { background: #5a2020; }
 
-.btn-danger:active {
-  background: #5a2020;
+.btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 4px 0;
+  margin-bottom: 4px;
 }
-
-.btn-small {
-  padding: 6px 12px;
-  font-size: 0.78rem;
-  width: auto;
-  margin-top: 8px;
-  margin-right: 6px;
-  display: inline-block;
-}
+.btn-back:active { color: var(--green); }
 
 .btn-eliminar {
   margin-top: 8px;
@@ -237,13 +200,9 @@ input:focus, select:focus {
   cursor: pointer;
   font-weight: 600;
 }
+.btn-eliminar:active { background: #5a2020; color: #fff; }
 
-.btn-eliminar:active {
-  background: #5a2020;
-  color: #fff;
-}
-
-/* ========== MENSAJES ========== */
+/* MENSAJES */
 .mensaje {
   padding: 11px;
   border-radius: 8px;
@@ -251,23 +210,9 @@ input:focus, select:focus {
   text-align: center;
   font-size: 0.88rem;
 }
-
-.mensaje.error {
-  background: #3a1515;
-  color: var(--red);
-  border: 1px solid #a33;
-}
-
-.mensaje.exito {
-  background: #153a15;
-  color: var(--green);
-  border: 1px solid #0a0;
-}
-
-.oculto {
-  display: none !important;
-}
-
+.mensaje.error { background: #3a1515; color: var(--red); border: 1px solid #a33; }
+.mensaje.exito { background: #153a15; color: var(--green); border: 1px solid #0a0; }
+.oculto { display: none !important; }
 .empty {
   text-align: center;
   color: var(--muted);
@@ -276,11 +221,8 @@ input:focus, select:focus {
   line-height: 1.5;
 }
 
-/* ========== LISTAS ========== */
-.lista {
-  list-style: none;
-}
-
+/* LISTAS HISTORIAL */
+.lista { list-style: none; }
 .lista li {
   background: var(--card2);
   border-radius: 10px;
@@ -288,16 +230,7 @@ input:focus, select:focus {
   margin-bottom: 8px;
   border-left: 4px solid var(--green);
 }
-
-.lista li.venta {
-  border-left-color: var(--blue);
-}
-
-.lista li.agotado {
-  border-left-color: #555;
-  opacity: 0.65;
-}
-
+.lista li.venta { border-left-color: var(--blue); }
 .item-header {
   display: flex;
   justify-content: space-between;
@@ -305,63 +238,55 @@ input:focus, select:focus {
   margin-bottom: 4px;
   gap: 8px;
 }
+.item-nombre { font-weight: 700; color: #fff; font-size: 0.95rem; }
+.item-fecha { font-size: 0.72rem; color: var(--muted); white-space: nowrap; }
+.item-detalle { font-size: 0.82rem; color: #bbb; line-height: 1.45; }
 
-.item-nombre {
-  font-weight: 700;
-  color: #fff;
-  font-size: 0.95rem;
-}
-
-.item-fecha {
-  font-size: 0.72rem;
-  color: var(--muted);
-  white-space: nowrap;
-}
-
-.item-detalle {
-  font-size: 0.82rem;
-  color: #bbb;
-  line-height: 1.45;
-}
-
-.badge {
-  display: inline-block;
-  padding: 2px 8px;
+/* INVENTARIO MINIMALISTA */
+.inv-item {
+  background: var(--card);
   border-radius: 10px;
-  font-size: 0.68rem;
-  font-weight: 700;
-}
-
-.badge.stock {
-  background: rgba(0, 230, 118, 0.15);
-  color: var(--green);
-}
-
-.badge.agotado {
-  background: #333;
-  color: #888;
-}
-
-.badge.precio {
-  background: rgba(64, 196, 255, 0.15);
-  color: var(--blue);
-}
-
-/* ========== INVENTARIO MEJORADO ========== */
-.prod-card {
-  background: var(--card2);
-  border-radius: 10px;
-  padding: 14px;
-  margin-bottom: 10px;
-  border: 1px solid var(--border);
-}
-
-.prod-card .prod-nombre {
-  font-weight: 700;
-  font-size: 1.05rem;
+  padding: 14px 16px;
   margin-bottom: 8px;
-  color: #fff;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: border-color 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
+.inv-item:active { border-color: var(--green); }
+.inv-item.agotado { opacity: 0.55; }
+
+.inv-left { flex: 1; min-width: 0; }
+.inv-nombre {
+  font-weight: 700;
+  font-size: 1rem;
+  color: #fff;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.inv-meta {
+  font-size: 0.8rem;
+  color: var(--muted);
+  display: flex;
+  gap: 14px;
+}
+.inv-meta strong { color: var(--text); font-weight: 600; }
+.inv-arrow { color: var(--muted); flex-shrink: 0; }
+
+/* DETALLE PRODUCTO */
+.det-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 14px;
+  font-size: 0.85rem;
+}
+.det-grid span { color: var(--muted); font-size: 0.75rem; }
+.det-grid strong { color: var(--text); font-weight: 600; }
 
 .prod-grid {
   display: grid;
@@ -369,25 +294,11 @@ input:focus, select:focus {
   gap: 6px 12px;
   font-size: 0.82rem;
   color: #bbb;
-  margin-bottom: 10px;
 }
+.prod-grid span { color: var(--muted); }
+.prod-grid strong { color: var(--text); font-weight: 600; }
 
-.prod-grid span {
-  color: var(--muted);
-}
-
-.prod-grid strong {
-  color: var(--text);
-  font-weight: 600;
-}
-
-.prod-actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-/* ========== PRECIO AUTO ========== */
+/* PRECIO AUTO */
 .precio-auto-box {
   background: rgba(64, 196, 255, 0.08);
   border: 1px solid rgba(64, 196, 255, 0.25);
@@ -398,21 +309,17 @@ input:focus, select:focus {
   color: var(--blue);
   display: none;
 }
+.precio-auto-box.visible { display: block; }
 
-.precio-auto-box.visible {
-  display: block;
-}
-
-/* ========== GRÁFICO ========== */
+/* GRÁFICO */
 .chart-container {
   position: relative;
   width: 100%;
   margin-top: 8px;
 }
-
-#chartGanancias {
+#chartGanancias, #chartProducto {
   width: 100% !important;
-  max-height: 280px;
+  max-height: 260px;
 }
 
 .stats-grid {
@@ -421,7 +328,6 @@ input:focus, select:focus {
   gap: 8px;
   margin-top: 14px;
 }
-
 .stat-box {
   background: var(--card2);
   border-radius: 8px;
@@ -429,24 +335,11 @@ input:focus, select:focus {
   text-align: center;
   border: 1px solid var(--border);
 }
+.stat-box .stat-label { font-size: 0.7rem; color: var(--muted); margin-bottom: 3px; }
+.stat-box .stat-value { font-size: 1rem; font-weight: 700; color: var(--green); }
+.stat-box .stat-value.neg { color: var(--red); }
 
-.stat-box .stat-label {
-  font-size: 0.7rem;
-  color: var(--muted);
-  margin-bottom: 3px;
-}
-
-.stat-box .stat-value {
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--green);
-}
-
-.stat-box .stat-value.neg {
-  color: var(--red);
-}
-
-/* ========== BOTTOM NAV ========== */
+/* BOTTOM NAV */
 .bottom-nav {
   position: fixed;
   bottom: 0;
@@ -460,7 +353,6 @@ input:focus, select:focus {
   z-index: 100;
   padding: 4px 0 env(safe-area-inset-bottom, 4px);
 }
-
 .nav-item {
   flex: 1;
   display: flex;
@@ -471,26 +363,16 @@ input:focus, select:focus {
   background: none;
   border: none;
   color: var(--muted);
-  font-size: 0.62rem;
+  font-size: 0.6rem;
   cursor: pointer;
   gap: 3px;
   font-weight: 600;
 }
+.nav-svg { width: 22px; height: 22px; }
+.nav-item.active { color: var(--green); }
+.nav-item:active { opacity: 0.7; }
 
-.nav-item .nav-icon {
-  font-size: 1.2rem;
-  line-height: 1;
-}
-
-.nav-item.active {
-  color: var(--green);
-}
-
-.nav-item:active {
-  opacity: 0.7;
-}
-
-/* ========== MODAL ========== */
+/* MODAL */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -501,11 +383,7 @@ input:focus, select:focus {
   justify-content: center;
   padding: 20px;
 }
-
-.modal-overlay.oculto {
-  display: none;
-}
-
+.modal-overlay.oculto { display: none; }
 .modal {
   background: var(--card);
   border-radius: 14px;
@@ -514,86 +392,15 @@ input:focus, select:focus {
   max-width: 340px;
   border: 1px solid var(--border);
 }
+.modal h3 { color: var(--green); margin-bottom: 14px; font-size: 1.1rem; }
+.modal-actions { display: flex; gap: 8px; margin-top: 16px; }
+.modal-actions .btn { margin-top: 0; flex: 1; }
 
-.modal h3 {
-  color: var(--green);
-  margin-bottom: 14px;
-  font-size: 1.1rem;
-}
-
-.modal-actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 16px;
-}
-
-.modal-actions .btn {
-  margin-top: 0;
-  flex: 1;
-}
-
-/* ========== FIRMA ========== */
+/* FIRMA */
 .firma {
   text-align: center;
   color: #444;
   font-size: 0.7rem;
   padding: 16px 0 8px;
   line-height: 1.4;
-}
-
-/* ========== TOGGLE ========== */
-.toggle-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 12px;
-  padding: 8px 0;
-}
-
-.toggle-row span {
-  font-size: 0.88rem;
-  color: #ccc;
-}
-
-.toggle {
-  position: relative;
-  width: 46px;
-  height: 26px;
-}
-
-.toggle input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-  position: absolute;
-}
-
-.toggle .slider {
-  position: absolute;
-  cursor: pointer;
-  inset: 0;
-  background: #333;
-  border-radius: 26px;
-  transition: 0.2s;
-}
-
-.toggle .slider:before {
-  position: absolute;
-  content: "";
-  height: 20px;
-  width: 20px;
-  left: 3px;
-  bottom: 3px;
-  background: #888;
-  border-radius: 50%;
-  transition: 0.2s;
-}
-
-.toggle input:checked + .slider {
-  background: var(--green);
-}
-
-.toggle input:checked + .slider:before {
-  transform: translateX(20px);
-  background: #111;
 }

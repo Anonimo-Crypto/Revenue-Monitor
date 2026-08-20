@@ -15,15 +15,19 @@
 </head>
 <body>
 
-  <!-- TOP BAR: sesiones -->
+  <!-- TOP BAR -->
   <div class="topbar">
-    <button class="btn-add-sesion" onclick="abrirModalSesion()" title="Nueva sesión">+</button>
+    <button class="btn-add-sesion" onclick="abrirModalSesion()" title="Nueva sesión" aria-label="Nueva sesión">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+    </button>
     <select class="sesion-select" id="sesion-select" onchange="cambiarSesion(this.value)"></select>
-    <button class="btn-edit-sesion" onclick="editarSesionActual()" title="Editar nombre">✎</button>
+    <button class="btn-edit-sesion" onclick="editarSesionActual()" title="Editar nombre" aria-label="Editar">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+    </button>
   </div>
 
-  <!-- RESUMEN (siempre visible) -->
-  <div class="resumen">
+  <!-- RESUMEN -->
+  <div class="resumen" id="resumen-bar">
     <div class="resumen-item">
       <div class="label">Invertido</div>
       <div class="value" id="res-invertido">$0.00</div>
@@ -42,174 +46,187 @@
     </div>
   </div>
 
-  <!-- ========== PANTALLA: INICIO ========== -->
+  <!-- ========== INICIO ========== -->
   <div id="pantalla-inicio" class="pantalla active">
     <div class="card">
       <h3>Agregar Lote (Compra)</h3>
       <div id="lote-msg" class="mensaje oculto"></div>
-
       <label>Nombre del producto</label>
       <input type="text" id="lote-nombre" placeholder="Ej: Caramelos Duros">
-
       <label>Costo total del lote</label>
       <input type="number" id="lote-costo" min="0" step="0.01" placeholder="0.00">
-
       <label>Cantidad de unidades</label>
       <input type="number" id="lote-cantidad" min="1" step="1" placeholder="1">
-
       <button class="btn" onclick="agregarLote()">Guardar Lote</button>
     </div>
-
-    <div class="firma">
-      Oscar Antonio Alvarez Collado<br>
-      Copyright © 2026
-    </div>
+    <div class="firma">Oscar Antonio Alvarez Collado<br>Copyright © 2026</div>
   </div>
 
-  <!-- ========== PANTALLA: VENTA ========== -->
+  <!-- ========== VENTA ========== -->
   <div id="pantalla-venta" class="pantalla">
     <h2>Registrar Venta</h2>
     <div class="card">
       <div id="venta-msg" class="mensaje oculto"></div>
-
       <label>Producto</label>
       <select id="venta-producto" onchange="onProductoVentaChange()">
         <option value="">-- Selecciona producto --</option>
       </select>
-
       <div id="precio-auto-info" class="precio-auto-box"></div>
-
       <label>Cantidad a vender</label>
       <input type="number" id="venta-cantidad" min="1" step="1" placeholder="1">
-
       <label>Precio de venta por unidad</label>
       <input type="number" id="venta-precio" min="0" step="0.01" placeholder="0.00">
-
       <button class="btn" onclick="registrarVenta()">Registrar Venta</button>
     </div>
-
     <div class="card">
       <h3>Precio predeterminado</h3>
-      <p style="font-size:0.82rem;color:#888;margin-bottom:10px;">
-        Asigna un precio fijo a un producto. Al venderlo se cargará automáticamente.
-      </p>
-
+      <p class="hint">Asigna un precio fijo. Al vender se cargará automáticamente.</p>
       <label>Producto</label>
-      <select id="precio-producto">
-        <option value="">-- Selecciona --</option>
-      </select>
-
+      <select id="precio-producto"><option value="">-- Selecciona --</option></select>
       <label>Precio de venta</label>
       <input type="number" id="precio-valor" min="0" step="0.01" placeholder="0.00">
-
       <button class="btn btn-secondary" onclick="guardarPrecioDefault()">Guardar precio</button>
       <div id="precio-msg" class="mensaje oculto" style="margin-top:10px"></div>
     </div>
   </div>
 
-  <!-- ========== PANTALLA: INVENTARIO ========== -->
+  <!-- ========== INVENTARIO ========== -->
   <div id="pantalla-inventario" class="pantalla">
     <h2>Inventario</h2>
     <div id="lista-inventario"></div>
   </div>
 
-  <!-- ========== PANTALLA: GRÁFICO ========== -->
+  <!-- ========== DETALLE PRODUCTO ========== -->
+  <div id="pantalla-detalle" class="pantalla">
+    <button class="btn-back" onclick="cerrarDetalle()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+      Volver
+    </button>
+    <h2 id="detalle-nombre">Producto</h2>
+
+    <div class="resumen detalle-resumen">
+      <div class="resumen-item">
+        <div class="label">Stock</div>
+        <div class="value" id="det-stock">0/0</div>
+      </div>
+      <div class="resumen-item">
+        <div class="label">Invertido</div>
+        <div class="value" id="det-invertido">$0</div>
+      </div>
+      <div class="resumen-item">
+        <div class="label">Ganancia</div>
+        <div class="value" id="det-ganancia">$0</div>
+      </div>
+      <div class="resumen-item">
+        <div class="label">Gan. potencial</div>
+        <div class="value" id="det-ganancia-full">$0</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="prod-grid det-grid">
+        <div><span>Costo promedio</span><br><strong id="det-costo-prom">$0</strong></div>
+        <div><span>Precio de venta</span><br><strong id="det-precio-venta">—</strong></div>
+        <div><span>Lotes</span><br><strong id="det-lotes">0</strong></div>
+        <div><span>Unidades vendidas</span><br><strong id="det-vendidas">0</strong></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Ventas del producto</h3>
+      <div id="detalle-chart-vacio" class="empty oculto" style="padding:20px 10px">Sin ventas aún</div>
+      <div class="chart-container">
+        <canvas id="chartProducto"></canvas>
+      </div>
+    </div>
+
+    <div class="card">
+      <button class="btn btn-secondary" onclick="abrirModalPrecioDesdeDetalle()">Establecer precio de venta</button>
+      <button class="btn btn-danger" onclick="eliminarProductoDetalle()" style="margin-top:10px">Eliminar producto</button>
+    </div>
+  </div>
+
+  <!-- ========== GRÁFICO ========== -->
   <div id="pantalla-grafico" class="pantalla">
     <h2>Gráfico de Ganancias</h2>
     <div class="card">
-      <div id="grafico-vacio" class="empty oculto">
-        Aún no hay ventas registradas.<br>Registra ventas para ver el gráfico.
-      </div>
+      <div id="grafico-vacio" class="empty oculto">Aún no hay ventas registradas.</div>
       <div class="chart-container">
         <canvas id="chartGanancias"></canvas>
       </div>
       <div class="stats-grid" id="stats-grafico">
-        <div class="stat-box">
-          <div class="stat-label">Nº Ventas</div>
-          <div class="stat-value" id="stat-num-ventas">0</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-label">Ganancia prom.</div>
-          <div class="stat-value" id="stat-promedio">$0</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-label">Mejor venta</div>
-          <div class="stat-value" id="stat-mejor">$0</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-label">Peor venta</div>
-          <div class="stat-value" id="stat-peor">$0</div>
-        </div>
+        <div class="stat-box"><div class="stat-label">Nº Ventas</div><div class="stat-value" id="stat-num-ventas">0</div></div>
+        <div class="stat-box"><div class="stat-label">Ganancia prom.</div><div class="stat-value" id="stat-promedio">$0</div></div>
+        <div class="stat-box"><div class="stat-label">Mejor venta</div><div class="stat-value" id="stat-mejor">$0</div></div>
+        <div class="stat-box"><div class="stat-label">Peor venta</div><div class="stat-value" id="stat-peor">$0</div></div>
       </div>
     </div>
   </div>
 
-  <!-- ========== PANTALLA: HISTORIAL ========== -->
+  <!-- ========== HISTORIAL ========== -->
   <div id="pantalla-historial" class="pantalla">
     <h2>Historial</h2>
-    <div class="card">
-      <div id="lista-historial"></div>
-    </div>
+    <div class="card"><div id="lista-historial"></div></div>
   </div>
 
-  <!-- ========== PANTALLA: DATOS ========== -->
+  <!-- ========== DATOS ========== -->
   <div id="pantalla-datos" class="pantalla">
     <h2>Datos</h2>
+
     <div class="card">
-      <h3>Respaldo</h3>
-      <p style="font-size:0.82rem;color:#888;margin-bottom:8px;">
-        Exporta o importa todos los datos de la sesión actual.
-      </p>
-      <button class="btn btn-secondary" onclick="exportarCSV()">📥 Exportar a CSV</button>
-      <button class="btn btn-secondary" onclick="document.getElementById('input-importar').click()" style="margin-top:10px">
-        📤 Importar desde CSV
-      </button>
+      <h3>Sesión actual</h3>
+      <p class="hint">Solo los datos de la sesión seleccionada.</p>
+      <button class="btn btn-secondary" onclick="exportarCSV()">Exportar sesión (CSV)</button>
+      <button class="btn btn-secondary" onclick="document.getElementById('input-importar').click()" style="margin-top:10px">Importar sesión (CSV)</button>
       <input type="file" id="input-importar" accept=".csv,text/csv" style="display:none" onchange="importarCSV(event)">
     </div>
 
     <div class="card">
-      <h3>Zona de peligro</h3>
-      <button class="btn btn-danger" onclick="borrarTodo()">Borrar todos los datos de esta sesión</button>
-      <button class="btn btn-danger" onclick="eliminarSesionActual()" style="margin-top:10px">
-        Eliminar esta sesión completa
-      </button>
+      <h3>Toda la aplicación</h3>
+      <p class="hint">Incluye todas las sesiones, inventarios, ventas y precios.</p>
+      <button class="btn btn-secondary" onclick="exportarTodo()">Exportar TODO (JSON)</button>
+      <button class="btn btn-secondary" onclick="document.getElementById('input-importar-todo').click()" style="margin-top:10px">Importar TODO (JSON)</button>
+      <input type="file" id="input-importar-todo" accept=".json,application/json" style="display:none" onchange="importarTodo(event)">
     </div>
 
-    <div class="firma">
-      Oscar Antonio Alvarez Collado<br>
-      Copyright © 2026
+    <div class="card">
+      <h3>Zona de peligro</h3>
+      <button class="btn btn-danger" onclick="borrarTodo()">Borrar datos de esta sesión</button>
+      <button class="btn btn-danger" onclick="eliminarSesionActual()" style="margin-top:10px">Eliminar esta sesión</button>
     </div>
+
+    <div class="firma">Oscar Antonio Alvarez Collado<br>Copyright © 2026</div>
   </div>
 
-  <!-- BOTTOM NAV -->
+  <!-- BOTTOM NAV (SVG icons) -->
   <nav class="bottom-nav">
     <button class="nav-item active" data-pantalla="inicio" onclick="irA('inicio')">
-      <span class="nav-icon">🏠</span>
+      <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1V10.5z"/></svg>
       Inicio
     </button>
     <button class="nav-item" data-pantalla="venta" onclick="irA('venta')">
-      <span class="nav-icon">💰</span>
+      <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="19" r="1.5"/><circle cx="17" cy="19" r="1.5"/><path d="M3 3h2l2.4 11.2a1 1 0 001 .8h9.2a1 1 0 001-.8L20 7H6"/></svg>
       Venta
     </button>
     <button class="nav-item" data-pantalla="inventario" onclick="irA('inventario')">
-      <span class="nav-icon">📦</span>
+      <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5v8l9 5 9-5V8z"/><path d="M3.5 8.5L12 13l8.5-4.5M12 13v9"/></svg>
       Inventario
     </button>
     <button class="nav-item" data-pantalla="grafico" onclick="irA('grafico')">
-      <span class="nav-icon">📊</span>
+      <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>
       Gráfico
     </button>
     <button class="nav-item" data-pantalla="historial" onclick="irA('historial')">
-      <span class="nav-icon">📜</span>
+      <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
       Historial
     </button>
     <button class="nav-item" data-pantalla="datos" onclick="irA('datos')">
-      <span class="nav-icon">⚙️</span>
+      <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
       Datos
     </button>
   </nav>
 
-  <!-- MODAL NUEVA / EDITAR SESIÓN -->
+  <!-- MODAL SESIÓN -->
   <div id="modal-sesion" class="modal-overlay oculto">
     <div class="modal">
       <h3 id="modal-sesion-titulo">Nueva sesión</h3>
@@ -222,11 +239,11 @@
     </div>
   </div>
 
-  <!-- MODAL PRECIO PRODUCTO -->
+  <!-- MODAL PRECIO -->
   <div id="modal-precio" class="modal-overlay oculto">
     <div class="modal">
       <h3>Precio de venta</h3>
-      <p id="modal-precio-producto" style="color:#ccc;margin-bottom:10px;font-size:0.9rem"></p>
+      <p id="modal-precio-producto" class="hint"></p>
       <label>Precio predeterminado</label>
       <input type="number" id="modal-precio-valor" min="0" step="0.01" placeholder="0.00">
       <div class="modal-actions">
@@ -239,9 +256,7 @@
   <script src="main.js"></script>
   <script>
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("sw.js")
-        .then(() => console.log("SW ok"))
-        .catch(err => console.log("SW error:", err));
+      navigator.serviceWorker.register("sw.js").catch(() => {});
     }
   </script>
 </body>
